@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-
 	"github.com/projectdiscovery/folderutil"
 )
 

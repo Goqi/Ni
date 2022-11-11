@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Ernuclei/v2/pkg/templates"
 	"bytes"
 	"encoding/json"
 	"log"
@@ -9,8 +10,6 @@ import (
 	"strings"
 
 	"github.com/alecthomas/jsonschema"
-
-	"Ernuclei/v2/pkg/templates"
 )
 
 var pathRegex = regexp.MustCompile(`github\.com/projectdiscovery/nuclei/v2/(?:internal|pkg)/(?:.*/)?([A-Za-z.]+)`)

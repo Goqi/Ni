@@ -1,13 +1,13 @@
 package extractors
 
 import (
+	"Ernuclei/v2/pkg/operators/common/dsl"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/Knetic/govaluate"
 	"github.com/itchyny/gojq"
-	"Ernuclei/v2/pkg/operators/common/dsl"
 )
 
 // CompileExtractors performs the initial setup operation on an extractor

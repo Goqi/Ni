@@ -1,13 +1,12 @@
 package stringslice
 
 import (
+	"Ernuclei/v2/pkg/utils"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/alecthomas/jsonschema"
-
-	"Ernuclei/v2/pkg/utils"
 )
 
 // StringSlice represents a single (in-lined) or multiple string value(s).

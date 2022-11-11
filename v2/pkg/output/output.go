@@ -1,6 +1,12 @@
 package output
 
 import (
+	"Ernuclei/v2/internal/colorizer"
+	"Ernuclei/v2/pkg/model"
+	"Ernuclei/v2/pkg/model/types/severity"
+	"Ernuclei/v2/pkg/operators"
+	"Ernuclei/v2/pkg/types"
+	"Ernuclei/v2/pkg/utils"
 	"fmt"
 	"io"
 	"os"
@@ -10,17 +16,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-
 	jsoniter "github.com/json-iterator/go"
 	"github.com/logrusorgru/aurora"
-
-	"Ernuclei/v2/internal/colorizer"
-	"Ernuclei/v2/pkg/model"
-	"Ernuclei/v2/pkg/model/types/severity"
-	"Ernuclei/v2/pkg/operators"
-	"Ernuclei/v2/pkg/types"
-	"Ernuclei/v2/pkg/utils"
+	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/interactsh/pkg/server"

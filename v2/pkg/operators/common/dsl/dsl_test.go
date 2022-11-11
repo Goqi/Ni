@@ -1,6 +1,7 @@
 package dsl
 
 import (
+	"Ernuclei/v2/pkg/types"
 	"fmt"
 	"math"
 	"regexp"
@@ -11,8 +12,6 @@ import (
 	"github.com/Knetic/govaluate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"Ernuclei/v2/pkg/types"
 )
 
 func TestDSLURLEncodeDecode(t *testing.T) {

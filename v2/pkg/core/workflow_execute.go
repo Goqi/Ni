@@ -1,16 +1,15 @@
 package core
 
 import (
-	"fmt"
-	"net/http/cookiejar"
-
-	"github.com/remeh/sizedwaitgroup"
-	"go.uber.org/atomic"
-
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/pkg/output"
 	"Ernuclei/v2/pkg/protocols/common/contextargs"
 	"Ernuclei/v2/pkg/workflows"
+	"fmt"
+	"net/http/cookiejar"
+
+	"github.com/projectdiscovery/gologger"
+	"github.com/remeh/sizedwaitgroup"
+	"go.uber.org/atomic"
 )
 
 const workflowStepExecutionError = "[%s] Could not execute workflow step: %s\n"

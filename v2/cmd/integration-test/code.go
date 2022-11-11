@@ -1,20 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path"
-	"strings"
-	"time"
-
-	"github.com/julienschmidt/httprouter"
-	"github.com/logrusorgru/aurora"
-	"github.com/pkg/errors"
-	"github.com/projectdiscovery/goflags"
 	"Ernuclei/v2/pkg/catalog/config"
 	"Ernuclei/v2/pkg/catalog/disk"
 	"Ernuclei/v2/pkg/catalog/loader"
@@ -31,6 +17,20 @@ import (
 	"Ernuclei/v2/pkg/testutils"
 	"Ernuclei/v2/pkg/types"
 	"Ernuclei/v2/pkg/utils/ratelimit"
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path"
+	"strings"
+	"time"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/logrusorgru/aurora"
+	"github.com/pkg/errors"
+	"github.com/projectdiscovery/goflags"
 )
 
 var codeTestcases = map[string]testutils.TestCase{

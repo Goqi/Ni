@@ -1,10 +1,10 @@
 package loader
 
 import (
+	"Ernuclei/v2/pkg/catalog/disk"
 	"reflect"
 	"testing"
 
-	"Ernuclei/v2/pkg/catalog/disk"
 	"github.com/stretchr/testify/require"
 )
 

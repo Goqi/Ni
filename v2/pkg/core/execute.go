@@ -1,15 +1,15 @@
 package core
 
 import (
-	"github.com/remeh/sizedwaitgroup"
-	"go.uber.org/atomic"
-
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/pkg/output"
 	"Ernuclei/v2/pkg/protocols/common/contextargs"
 	"Ernuclei/v2/pkg/templates"
 	"Ernuclei/v2/pkg/templates/types"
 	generalTypes "Ernuclei/v2/pkg/types"
+
+	"github.com/projectdiscovery/gologger"
+	"github.com/remeh/sizedwaitgroup"
+	"go.uber.org/atomic"
 )
 
 // Execute takes a list of templates/workflows that have been compiled

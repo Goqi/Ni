@@ -1,6 +1,14 @@
 package main
 
 import (
+	"Ernuclei/v2/internal/runner"
+	"Ernuclei/v2/pkg/catalog/config"
+	"Ernuclei/v2/pkg/model/types/severity"
+	"Ernuclei/v2/pkg/operators/common/dsl"
+	"Ernuclei/v2/pkg/protocols/http"
+	templateTypes "Ernuclei/v2/pkg/templates/types"
+	"Ernuclei/v2/pkg/types"
+	"Ernuclei/v2/pkg/utils/monitor"
 	"errors"
 	"fmt"
 	"io"
@@ -11,14 +19,6 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"Ernuclei/v2/internal/runner"
-	"Ernuclei/v2/pkg/catalog/config"
-	"Ernuclei/v2/pkg/model/types/severity"
-	"Ernuclei/v2/pkg/operators/common/dsl"
-	"Ernuclei/v2/pkg/protocols/http"
-	templateTypes "Ernuclei/v2/pkg/templates/types"
-	"Ernuclei/v2/pkg/types"
-	"Ernuclei/v2/pkg/utils/monitor"
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"

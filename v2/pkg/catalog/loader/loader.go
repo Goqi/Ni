@@ -1,8 +1,6 @@
 package loader
 
 import (
-	"os"
-
 	"Ernuclei/v2/pkg/catalog"
 	"Ernuclei/v2/pkg/catalog/config"
 	"Ernuclei/v2/pkg/catalog/loader/filter"
@@ -14,6 +12,8 @@ import (
 	"Ernuclei/v2/pkg/types"
 	"Ernuclei/v2/pkg/utils/stats"
 	"Ernuclei/v2/pkg/workflows"
+	"os"
+
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
 )

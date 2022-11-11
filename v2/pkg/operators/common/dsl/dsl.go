@@ -1,6 +1,9 @@
 package dsl
 
 import (
+	"Ernuclei/v2/pkg/protocols/common/helpers/deserialization"
+	"Ernuclei/v2/pkg/protocols/common/randomip"
+	"Ernuclei/v2/pkg/types"
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
@@ -27,18 +30,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/Knetic/govaluate"
 	"github.com/asaskevich/govalidator"
 	"github.com/hashicorp/go-version"
 	"github.com/logrusorgru/aurora"
-	"github.com/spaolacci/murmur3"
-
+	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/v2/pkg/protocols/common/helpers/deserialization"
-	"Ernuclei/v2/pkg/protocols/common/randomip"
-	"Ernuclei/v2/pkg/types"
+	"github.com/spaolacci/murmur3"
 )
 
 const (

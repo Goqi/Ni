@@ -3,6 +3,7 @@
 package hybrid
 
 import (
+	"Ernuclei/v2/pkg/types"
 	"bufio"
 	"io"
 	"os"
@@ -10,14 +11,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"github.com/projectdiscovery/filekv"
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
-	"Ernuclei/v2/pkg/types"
 )
 
 // Input is a hmap/filekv backed nuclei Input provider

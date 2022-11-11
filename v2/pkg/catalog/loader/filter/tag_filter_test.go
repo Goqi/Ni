@@ -1,17 +1,15 @@
 package filter
 
 import (
-	"testing"
-
-	"Ernuclei/v2/pkg/protocols/dns"
-	"Ernuclei/v2/pkg/protocols/http"
-
-	"github.com/stretchr/testify/require"
-
 	"Ernuclei/v2/pkg/model/types/severity"
 	"Ernuclei/v2/pkg/model/types/stringslice"
+	"Ernuclei/v2/pkg/protocols/dns"
+	"Ernuclei/v2/pkg/protocols/http"
 	"Ernuclei/v2/pkg/templates"
 	"Ernuclei/v2/pkg/templates/types"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestTagBasedFilter(t *testing.T) {

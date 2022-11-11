@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Ernuclei/v2/pkg/testutils"
 	"bufio"
 	"flag"
 	"fmt"
@@ -10,8 +11,6 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
-
-	"Ernuclei/v2/pkg/testutils"
 )
 
 var (

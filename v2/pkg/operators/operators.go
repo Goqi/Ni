@@ -1,15 +1,14 @@
 package operators
 
 import (
-	"fmt"
-	"strconv"
-
-	"github.com/pkg/errors"
-
 	"Ernuclei/v2/pkg/operators/extractors"
 	"Ernuclei/v2/pkg/operators/matchers"
 	"Ernuclei/v2/pkg/protocols/common/generators"
 	"Ernuclei/v2/pkg/protocols/common/utils/excludematchers"
+	"fmt"
+	"strconv"
+
+	"github.com/pkg/errors"
 	"github.com/projectdiscovery/sliceutil"
 )
 

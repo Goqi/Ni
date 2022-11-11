@@ -1,19 +1,18 @@
 package http
 
 import (
+	"Ernuclei/v2/pkg/operators"
+	"Ernuclei/v2/pkg/protocols"
+	"Ernuclei/v2/pkg/protocols/common/expressions"
+	"Ernuclei/v2/pkg/protocols/common/generators"
+	"Ernuclei/v2/pkg/protocols/http/httpclientpool"
 	"bytes"
 	"fmt"
 	"strings"
 
 	json "github.com/json-iterator/go"
 	"github.com/pkg/errors"
-
 	"github.com/projectdiscovery/fileutil"
-	"Ernuclei/v2/pkg/operators"
-	"Ernuclei/v2/pkg/protocols"
-	"Ernuclei/v2/pkg/protocols/common/expressions"
-	"Ernuclei/v2/pkg/protocols/common/generators"
-	"Ernuclei/v2/pkg/protocols/http/httpclientpool"
 	"github.com/projectdiscovery/rawhttp"
 	"github.com/projectdiscovery/retryablehttp-go"
 )

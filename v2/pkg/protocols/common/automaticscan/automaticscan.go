@@ -1,6 +1,13 @@
 package automaticscan
 
 import (
+	"Ernuclei/v2/pkg/catalog/config"
+	"Ernuclei/v2/pkg/catalog/loader"
+	"Ernuclei/v2/pkg/core"
+	"Ernuclei/v2/pkg/protocols"
+	"Ernuclei/v2/pkg/protocols/http/httpclientpool"
+	"Ernuclei/v2/pkg/templates"
+	"Ernuclei/v2/pkg/templates/types"
 	"io"
 	"net/http"
 	"os"
@@ -10,13 +17,6 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/v2/pkg/catalog/config"
-	"Ernuclei/v2/pkg/catalog/loader"
-	"Ernuclei/v2/pkg/core"
-	"Ernuclei/v2/pkg/protocols"
-	"Ernuclei/v2/pkg/protocols/http/httpclientpool"
-	"Ernuclei/v2/pkg/templates"
-	"Ernuclei/v2/pkg/templates/types"
 	"github.com/projectdiscovery/retryablehttp-go"
 	"github.com/projectdiscovery/sliceutil"
 	wappalyzer "github.com/projectdiscovery/wappalyzergo"

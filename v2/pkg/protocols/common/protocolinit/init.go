@@ -1,14 +1,14 @@
 package protocolinit
 
 import (
-	"github.com/corpix/uarand"
-
 	"Ernuclei/v2/pkg/protocols/common/protocolstate"
 	"Ernuclei/v2/pkg/protocols/dns/dnsclientpool"
 	"Ernuclei/v2/pkg/protocols/http/httpclientpool"
 	"Ernuclei/v2/pkg/protocols/http/signerpool"
 	"Ernuclei/v2/pkg/protocols/network/networkclientpool"
 	"Ernuclei/v2/pkg/types"
+	
+	"github.com/corpix/uarand"
 )
 
 // Init initializes the client pools for the protocols

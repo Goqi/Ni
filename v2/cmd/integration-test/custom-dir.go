@@ -1,9 +1,8 @@
 package main
 
 import (
-	"os"
-
 	"Ernuclei/v2/pkg/testutils"
+	"os"
 )
 
 type customConfigDirTest struct{}
