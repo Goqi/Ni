@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
 
-	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"Ernuclei/v2/pkg/types"
+	"github.com/projectdiscovery/fastdialer/fastdialer"
 )
 
 // Dialer is a shared fastdialer instance for host DNS resolution

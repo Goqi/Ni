@@ -3,12 +3,12 @@ package variables
 import (
 	"strings"
 
+	"github.com/alecthomas/jsonschema"
 	"Ernuclei/v2/pkg/protocols/common/expressions"
 	"Ernuclei/v2/pkg/protocols/common/generators"
 	"Ernuclei/v2/pkg/protocols/common/interactsh"
 	"Ernuclei/v2/pkg/types"
 	"Ernuclei/v2/pkg/utils"
-	"github.com/alecthomas/jsonschema"
 )
 
 // Variable is a key-value pair of strings that can be used

@@ -1,11 +1,11 @@
 package eventcreator
 
 import (
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/pkg/operators"
 	"Ernuclei/v2/pkg/output"
 	"Ernuclei/v2/pkg/protocols"
 	"Ernuclei/v2/pkg/protocols/common/utils/vardump"
+	"github.com/projectdiscovery/gologger"
 )
 
 // CreateEvent wraps the outputEvent with the result of the operators defined on the request

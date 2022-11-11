@@ -12,15 +12,15 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
+	"Ernuclei/v2/pkg/catalog/config"
+	"Ernuclei/v2/pkg/protocols/common/protocolinit"
+	"Ernuclei/v2/pkg/protocols/headless/engine"
+	"Ernuclei/v2/pkg/types"
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/formatter"
 	"github.com/projectdiscovery/gologger/levels"
-	"Ernuclei/v2/pkg/catalog/config"
-	"Ernuclei/v2/pkg/protocols/common/protocolinit"
-	"Ernuclei/v2/pkg/protocols/headless/engine"
-	"Ernuclei/v2/pkg/types"
 )
 
 func ConfigureOptions() error {

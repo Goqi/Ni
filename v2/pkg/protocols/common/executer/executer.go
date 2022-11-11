@@ -6,12 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/pkg/operators/common/dsl"
 	"Ernuclei/v2/pkg/output"
 	"Ernuclei/v2/pkg/protocols"
 	"Ernuclei/v2/pkg/protocols/common/contextargs"
 	"Ernuclei/v2/pkg/protocols/common/helpers/writer"
-	"github.com/projectdiscovery/gologger"
 )
 
 // Executer executes a group of requests for a protocol

@@ -8,6 +8,8 @@ import (
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/iputil"
 	"Ernuclei/v2/pkg/output"
 	"Ernuclei/v2/pkg/protocols"
 	"Ernuclei/v2/pkg/protocols/common/contextargs"
@@ -18,8 +20,6 @@ import (
 	"Ernuclei/v2/pkg/protocols/common/utils/vardump"
 	templateTypes "Ernuclei/v2/pkg/templates/types"
 	"Ernuclei/v2/pkg/utils"
-	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/retryabledns"
 )
 

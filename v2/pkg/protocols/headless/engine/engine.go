@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 	ps "github.com/shirou/gopsutil/v3/process"
 
-	"Ernuclei/v2/pkg/types"
 	"github.com/projectdiscovery/fileutil"
+	"Ernuclei/v2/pkg/types"
 	"github.com/projectdiscovery/stringsutil"
 )
 

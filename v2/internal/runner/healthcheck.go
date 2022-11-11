@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/projectdiscovery/fileutil"
 	"Ernuclei/v2/pkg/catalog/config"
 	"Ernuclei/v2/pkg/types"
+	"github.com/projectdiscovery/fileutil"
 )
 
 // DoHealthCheck performs self-diagnostic checks

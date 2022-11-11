@@ -16,7 +16,6 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/pkg/protocols/common/expressions"
 	"Ernuclei/v2/pkg/protocols/common/generators"
 	"Ernuclei/v2/pkg/protocols/common/replacer"
@@ -25,6 +24,7 @@ import (
 	"Ernuclei/v2/pkg/protocols/http/race"
 	"Ernuclei/v2/pkg/protocols/http/raw"
 	"Ernuclei/v2/pkg/types"
+	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/rawhttp"
 	"github.com/projectdiscovery/retryablehttp-go"
 	"github.com/projectdiscovery/stringsutil"

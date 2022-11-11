@@ -5,9 +5,9 @@ import (
 
 	"github.com/Knetic/govaluate"
 
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/pkg/operators/common/dsl"
 	"Ernuclei/v2/pkg/protocols/common/expressions"
+	"github.com/projectdiscovery/gologger"
 )
 
 // MatchStatusCode matches a status code check against a corpus

@@ -4,12 +4,12 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/fileutil"
 	useragent "Ernuclei/v2/pkg/model/types/userAgent"
 	"Ernuclei/v2/pkg/operators"
 	"Ernuclei/v2/pkg/protocols"
 	"Ernuclei/v2/pkg/protocols/common/generators"
 	"Ernuclei/v2/pkg/protocols/headless/engine"
-	"github.com/projectdiscovery/fileutil"
 )
 
 // Request contains a Headless protocol request to be made from a template

@@ -3,10 +3,10 @@ package types
 import (
 	"time"
 
-	"github.com/projectdiscovery/fileutil"
-	"github.com/projectdiscovery/goflags"
 	"Ernuclei/v2/pkg/model/types/severity"
 	"Ernuclei/v2/pkg/templates/types"
+	"github.com/projectdiscovery/fileutil"
+	"github.com/projectdiscovery/goflags"
 )
 
 // Options contains the configuration options for nuclei scanner.

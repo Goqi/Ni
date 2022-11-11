@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/internal/runner/nucleicloud"
 	"Ernuclei/v2/pkg/catalog/loader"
 	"Ernuclei/v2/pkg/core"
 	"Ernuclei/v2/pkg/output"
 	"Ernuclei/v2/pkg/protocols"
-	"github.com/projectdiscovery/gologger"
 	"go.uber.org/atomic"
 )
 

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"Ernuclei/v2/pkg/types"
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/v2/pkg/types"
 )
 
 var proxyURLList []url.URL

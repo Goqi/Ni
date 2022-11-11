@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/remeh/sizedwaitgroup"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/v2/pkg/operators"
 	"Ernuclei/v2/pkg/operators/matchers"
 	"Ernuclei/v2/pkg/output"
@@ -21,7 +22,6 @@ import (
 	"Ernuclei/v2/pkg/protocols/common/helpers/eventcreator"
 	"Ernuclei/v2/pkg/protocols/common/helpers/responsehighlighter"
 	templateTypes "Ernuclei/v2/pkg/templates/types"
-	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/sliceutil"
 )
 

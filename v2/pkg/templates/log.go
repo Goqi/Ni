@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"Ernuclei/v2/pkg/model/types/severity"
 	"github.com/logrusorgru/aurora"
+	"Ernuclei/v2/pkg/model/types/severity"
 )
 
 var (

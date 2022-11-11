@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"Ernuclei/v2/pkg/types"
 	"github.com/pkg/errors"
+	"Ernuclei/v2/pkg/types"
 	"github.com/projectdiscovery/retryabledns"
 )
 

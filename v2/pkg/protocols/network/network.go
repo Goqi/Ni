@@ -5,13 +5,13 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/fileutil"
 	"Ernuclei/v2/pkg/operators"
 	"Ernuclei/v2/pkg/protocols"
 	"Ernuclei/v2/pkg/protocols/common/expressions"
 	"Ernuclei/v2/pkg/protocols/common/generators"
 	"Ernuclei/v2/pkg/protocols/network/networkclientpool"
-	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"github.com/projectdiscovery/fileutil"
 )
 
 // Request contains a Network protocol request to be made from a template
