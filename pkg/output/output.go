@@ -1,7 +1,7 @@
 package output
 
 import (
-	"Ernuclei/internal/colorizer"
+	"Ernuclei/pkg/colorizer"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/model/types/severity"
 	"Ernuclei/pkg/operators"

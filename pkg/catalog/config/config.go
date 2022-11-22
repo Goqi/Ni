@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
@@ -24,10 +23,10 @@ type Config struct {
 }
 
 // nucleiConfigFilename is the filename of nuclei configuration file.
-const nucleiConfigFilename = ".templates-config.json"
+const nucleiConfigFilename = "templates-config.json"
 
 // Version is the current version of nuclei
-const Version = `2.7.9`
+const Version = `0.1`
 
 var customConfigDirectory string
 
@@ -44,24 +43,36 @@ func getConfigDetails() (string, error) {
 	}
 	_ = os.MkdirAll(configDir, 0755)
 	templatesConfigFile := filepath.Join(configDir, nucleiConfigFilename)
+	//currentDir, _ := os.Getwd()
+	//templatesConfigFile := currentDir + "\\config1"
 	return templatesConfigFile, nil
 }
 
 // GetConfigDir returns the nuclei configuration directory
+//func GetConfigDir() (string, error) {
+//	var (
+//		home string
+//		err  error
+//	)
+//	if customConfigDirectory != "" {
+//		home = customConfigDirectory
+//		return home, nil
+//	}
+//	home, err = homedir.Dir()
+//	if err != nil {
+//		return "", err
+//	}
+//	return filepath.Join(home, ".config", "nuclei"), nil
+//}
+
+// GetConfigDir returns the nuclei configuration directory
+
+// GetConfigDir 修改config目录
 func GetConfigDir() (string, error) {
-	var (
-		home string
-		err  error
-	)
-	if customConfigDirectory != "" {
-		home = customConfigDirectory
-		return home, nil
-	}
-	home, err = homedir.Dir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".config", "nuclei"), nil
+	home := "\\config"
+	currentDir, _ := os.Getwd()
+
+	return currentDir + home, nil
 }
 
 // ReadConfiguration reads the nuclei configuration file from disk.
@@ -104,7 +115,7 @@ func WriteConfiguration(config *Config) error {
 	return nil
 }
 
-const nucleiIgnoreFile = ".nuclei-ignore"
+const nucleiIgnoreFile = "nuclei-ignore"
 
 // IgnoreFile is an internal nuclei template blocking configuration file
 type IgnoreFile struct {

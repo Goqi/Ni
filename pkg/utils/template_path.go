@@ -1,11 +1,11 @@
 package utils
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
 	"Ernuclei/pkg/catalog/config"
-	"github.com/mitchellh/go-homedir"
 )
 
 const (
@@ -34,8 +34,11 @@ func TemplatePathURL(fullPath string) (string, string) {
 }
 
 // GetDefaultTemplatePath on default settings
+// nuclei-templates路径
 func GetDefaultTemplatePath() (string, error) {
-	home, err := homedir.Dir()
+	//home, err := homedir.Dir()
+	home, err := os.Getwd()
+
 	if err != nil {
 		return "", err
 	}

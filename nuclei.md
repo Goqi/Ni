@@ -30,7 +30,6 @@
   <a href="https://github.com/projectdiscovery/nuclei/blob/master/README.md">English</a> •
   <a href="https://github.com/projectdiscovery/nuclei/blob/master/README_CN.md">中文</a>
 </p>
-
 ---
 
 Nuclei使用零误报的定制模板向目标发送请求，同时可以对大量主机进行快速扫描。Nuclei提供TCP、DNS、HTTP、FILE等各类协议的扫描，通过强大且灵活的模板，可以使用Nuclei模拟各种安全检查。

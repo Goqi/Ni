@@ -1,3 +1,9 @@
 .idea
 idea
 .vscode
+
+config
+release
+nuclei-templates
+
+*.yaml
