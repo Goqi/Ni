@@ -4,5 +4,7 @@ idea
 
 config
 release
+nuclei-templates-9.2.9
 
 *.cfg
+ip.txt

@@ -9,8 +9,14 @@ package main
 
 import (
 	"Ernuclei/cmd"
+	"fmt"
+	"time"
 )
 
 func main() {
+	StartTime := time.Now()
 	cmd.Nuclei()
+	EndTime := time.Now()
+	Time := EndTime.Sub(StartTime)
+	fmt.Printf("程序运行完成！运行时间:%s\n", Time)
 }
