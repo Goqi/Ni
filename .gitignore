@@ -4,6 +4,5 @@ idea
 
 config
 release
-nuclei-templates
 
-*.yaml
+*.cfg
