@@ -10,7 +10,7 @@ import (
 
 const (
 	// TemplatesRepoURL is the URL for files in nuclei-templates repository
-	TemplatesRepoURL = "https://github.com/projectdiscovery/nuclei-templates/blob/master/"
+	TemplatesRepoURL = "https://github.com/Goqi/pocs/blob/master/"
 )
 
 var configData *config.Config
@@ -42,5 +42,5 @@ func GetDefaultTemplatePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, "nuclei-templates"), nil
+	return filepath.Join(home, "pocs"), nil
 }

@@ -13,17 +13,19 @@ import (
 
 // Config contains the internal nuclei engine configuration
 type Config struct {
-	TemplatesDirectory string `json:"nuclei-templates-directory,omitempty"`
-	TemplateVersion    string `json:"nuclei-templates-version,omitempty"`
-	NucleiVersion      string `json:"nuclei-version,omitempty"`
-	NucleiIgnoreHash   string `json:"nuclei-ignore-hash,omitempty"`
+	//TemplatesDirectory string `json:"nuclei-templates-directory,omitempty"`
+	TemplatesDirectory string `json:"pocs,omitempty"`
+
+	TemplateVersion  string `json:"nuclei-templates-version,omitempty"`
+	NucleiVersion    string `json:"nuclei-version,omitempty"`
+	NucleiIgnoreHash string `json:"ignore-hash,omitempty"`
 
 	NucleiLatestVersion          string `json:"nuclei-latest-version"`
 	NucleiTemplatesLatestVersion string `json:"nuclei-templates-latest-version"`
 }
 
 // nucleiConfigFilename is the filename of nuclei configuration file.
-const nucleiConfigFilename = "templates-config.json"
+const nucleiConfigFilename = "templates.json"
 
 // Version is the current version of nuclei
 const Version = `0.1`
@@ -69,7 +71,7 @@ func getConfigDetails() (string, error) {
 
 // GetConfigDir 修改config目录
 func GetConfigDir() (string, error) {
-	home := "\\config"
+	home := "\\pocs"
 	currentDir, _ := os.Getwd()
 
 	return currentDir + home, nil
@@ -115,7 +117,7 @@ func WriteConfiguration(config *Config) error {
 	return nil
 }
 
-const nucleiIgnoreFile = "nuclei-ignore"
+const nucleiIgnoreFile = "ignore"
 
 // IgnoreFile is an internal nuclei template blocking configuration file
 type IgnoreFile struct {
@@ -127,14 +129,14 @@ type IgnoreFile struct {
 func ReadIgnoreFile() IgnoreFile {
 	file, err := os.Open(GetIgnoreFilePath())
 	if err != nil {
-		gologger.Error().Msgf("Could not read nuclei-ignore file: %s\n", err)
+		gologger.Error().Msgf("Could not read ignore file: %s\n", err)
 		return IgnoreFile{}
 	}
 	defer file.Close()
 
 	ignore := IgnoreFile{}
 	if err := yaml.NewDecoder(file).Decode(&ignore); err != nil {
-		gologger.Error().Msgf("Could not parse nuclei-ignore file: %s\n", err)
+		gologger.Error().Msgf("Could not parse ignore file: %s\n", err)
 		return IgnoreFile{}
 	}
 	return ignore

@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/folderutil"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/nuclei-updatecheck-api/client"
@@ -39,8 +38,8 @@ import (
 const (
 	userName             = "projectdiscovery"
 	repoName             = "nuclei-templates"
-	nucleiIgnoreFile     = "nuclei-ignore"
-	nucleiConfigFilename = "templates-config.json"
+	nucleiIgnoreFile     = "ignore"
+	nucleiConfigFilename = "templates.json"
 )
 
 var reVersion = regexp.MustCompile(`\d+\.\d+\.\d+`)
@@ -94,42 +93,44 @@ func (r *Runner) updateTemplates() error { // TODO this method does more than ju
 
 	ctx := context.Background()
 
-	var noTemplatesFound bool
-	if !fileutil.FolderExists(r.templatesConfig.TemplatesDirectory) {
-		noTemplatesFound = true
-	}
-
-	if r.templatesConfig.TemplateVersion == "" || (r.options.TemplatesDirectory != "" && r.templatesConfig.TemplatesDirectory != r.options.TemplatesDirectory) || noTemplatesFound {
-		gologger.Info().Msgf("nuclei-templates are not installed, installing...\n")
-
-		if r.options.TemplatesDirectory != "" && r.templatesConfig.TemplatesDirectory != r.options.TemplatesDirectory {
-			r.templatesConfig.TemplatesDirectory, _ = filepath.Abs(r.options.TemplatesDirectory)
-		}
-		r.fetchLatestVersionsFromGithub(configDir) // also fetch the latest versions
-
-		version, err := semver.Parse(r.templatesConfig.NucleiTemplatesLatestVersion)
-		if err != nil {
-			return err
-		}
-
-		// Download the repository and write the revision to a HEAD file.
-		asset, getErr := r.getLatestReleaseFromGithub(r.templatesConfig.NucleiTemplatesLatestVersion)
-		if getErr != nil {
-			return getErr
-		}
-		gologger.Verbose().Msgf("Downloading nuclei-templates (v%s) to %s\n", version.String(), r.templatesConfig.TemplatesDirectory)
-
-		if _, err := r.downloadReleaseAndUnzip(ctx, version.String(), asset.GetZipballURL()); err != nil {
-			return err
-		}
-		r.templatesConfig.TemplateVersion = version.String()
-
-		if err := config.WriteConfiguration(r.templatesConfig); err != nil {
-			return err
-		}
-		gologger.Info().Msgf("Successfully downloaded nuclei-templates (v%s) to %s. GoodLuck!\n", version.String(), r.templatesConfig.TemplatesDirectory)
-		return nil
-	}
+	// 自动下载yaml
+	//var noTemplatesFound bool
+	//if !fileutil.FolderExists(r.templatesConfig.TemplatesDirectory) {
+	//	noTemplatesFound = true
+	//	//noTemplatesFound = false
+	//
+	//}
+	//if r.templatesConfig.TemplateVersion == "" || (r.options.TemplatesDirectory != "" && r.templatesConfig.TemplatesDirectory != r.options.TemplatesDirectory) || noTemplatesFound {
+	//	gologger.Info().Msgf("nuclei-templates are not installed, installing...\n")
+	//
+	//	if r.options.TemplatesDirectory != "" && r.templatesConfig.TemplatesDirectory != r.options.TemplatesDirectory {
+	//		r.templatesConfig.TemplatesDirectory, _ = filepath.Abs(r.options.TemplatesDirectory)
+	//	}
+	//	r.fetchLatestVersionsFromGithub(configDir) // also fetch the latest versions
+	//
+	//	version, err := semver.Parse(r.templatesConfig.NucleiTemplatesLatestVersion)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	// Download the repository and write the revision to a HEAD file.
+	//	asset, getErr := r.getLatestReleaseFromGithub(r.templatesConfig.NucleiTemplatesLatestVersion)
+	//	if getErr != nil {
+	//		return getErr
+	//	}
+	//	gologger.Verbose().Msgf("Downloading nuclei-templates (v%s) to %s\n", version.String(), r.templatesConfig.TemplatesDirectory)
+	//
+	//	if _, err := r.downloadReleaseAndUnzip(ctx, version.String(), asset.GetZipballURL()); err != nil {
+	//		return err
+	//	}
+	//	r.templatesConfig.TemplateVersion = version.String()
+	//
+	//	if err := config.WriteConfiguration(r.templatesConfig); err != nil {
+	//		return err
+	//	}
+	//	gologger.Info().Msgf("Successfully downloaded nuclei-templates (v%s) to %s. GoodLuck!\n", version.String(), r.templatesConfig.TemplatesDirectory)
+	//	return nil
+	//}
 
 	latestVersion, currentVersion, err := getVersions(r)
 	if err != nil {
@@ -212,7 +213,7 @@ func (r *Runner) readInternalConfigurationFile(configDir string) error {
 	return nil
 }
 
-// checkNucleiIgnoreFileUpdates checks .nuclei-ignore file for updates from GitHub
+// checkNucleiIgnoreFileUpdates checks .ignore file for updates from GitHub
 func (r *Runner) checkNucleiIgnoreFileUpdates(configDir string) bool {
 	data, err := client.GetLatestIgnoreFile()
 	if err != nil {

@@ -63,9 +63,9 @@ func (exporter *Exporter) Export(event *output.ResultEvent) error {
 
 	var templateURL string
 	if strings.HasPrefix(event.TemplatePath, exporter.home) {
-		templateURL = "https://github.com/projectdiscovery/nuclei-templates/blob/master" + templatePath
+		templateURL = "https://github.com/Goqi/pocs/blob/master" + templatePath
 	} else {
-		templateURL = "https://github.com/projectdiscovery/nuclei-templates"
+		templateURL = "https://github.com/Goqi/pocs"
 	}
 
 	var ruleDescription string

@@ -259,12 +259,12 @@ on extensive configurability, massive extensibility and ease of use.`)
 		flagSet.BoolVarP(&options.HealthCheck, "health-check", "hc", false, "run diagnostic check up"),
 	)
 
-	flagSet.CreateGroup("update", "Update",
-		flagSet.BoolVar(&options.UpdateNuclei, "update", false, "update nuclei engine to the latest released version"),
-		flagSet.BoolVarP(&options.UpdateTemplates, "update-templates", "ut", false, "update nuclei-templates to latest released version"),
-		flagSet.StringVarP(&options.TemplatesDirectory, "update-directory", "ud", "", "overwrite the default directory to install nuclei-templates"),
-		flagSet.BoolVarP(&options.NoUpdateTemplates, "disable-update-check", "duc", false, "disable automatic nuclei/templates update check"),
-	)
+	//flagSet.CreateGroup("update", "Update",
+	//	flagSet.BoolVar(&options.UpdateNuclei, "update", false, "update nuclei engine to the latest released version"),
+	//	flagSet.BoolVarP(&options.UpdateTemplates, "update-templates", "ut", false, "update nuclei-templates to latest released version"),
+	//	flagSet.StringVarP(&options.TemplatesDirectory, "update-directory", "ud", "", "overwrite the default directory to install nuclei-templates"),
+	//	flagSet.BoolVarP(&options.NoUpdateTemplates, "disable-update-check", "duc", false, "disable automatic nuclei/templates update check"),
+	//)
 
 	flagSet.CreateGroup("stats", "Statistics",
 		flagSet.BoolVar(&options.EnableProgressBar, "stats", false, "display statistics about the running scan"),
@@ -289,7 +289,7 @@ on extensive configurability, massive extensibility and ease of use.`)
 		originalIgnorePath := config.GetIgnoreFilePath()
 		config.SetCustomConfigDirectory(options.CustomConfigDir)
 		configPath := filepath.Join(options.CustomConfigDir, "config.yaml")
-		ignoreFile := filepath.Join(options.CustomConfigDir, "nuclei-ignore")
+		ignoreFile := filepath.Join(options.CustomConfigDir, "ignore")
 		if !fileutil.FileExists(ignoreFile) {
 			_ = fileutil.CopyFile(originalIgnorePath, ignoreFile)
 		}
