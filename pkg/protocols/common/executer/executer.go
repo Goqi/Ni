@@ -1,17 +1,16 @@
 package executer
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/operators/common/dsl"
 	"Ernuclei/pkg/output"
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/protocols/common/contextargs"
 	"Ernuclei/pkg/protocols/common/helpers/writer"
+	"github.com/projectdiscovery/gologger"
 )
 
 // Executer executes a group of requests for a protocol
@@ -40,7 +39,7 @@ func (e *Executer) Compile() error {
 					formattedErrorMessage := strings.ToUpper(rawErrorMessage[:1]) + rawErrorMessage[1:] + "."
 					gologger.Warning().Msgf(formattedErrorMessage)
 					gologger.Info().Msgf("The available custom DSL functions are:")
-					fmt.Println(dsl.GetPrintableDslFunctionSignatures(cliOptions.NoColor))
+					gologger.Info().Msgf(dsl.GetPrintableDslFunctionSignatures(cliOptions.NoColor))
 				}
 			}
 			return err

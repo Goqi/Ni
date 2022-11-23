@@ -49,13 +49,13 @@ func RunNucleiBareArgsAndGetResults(debug bool, extra ...string) ([]string, erro
 	if debug {
 		cmd.Args = append(cmd.Args, "-debug")
 		cmd.Stderr = os.Stderr
-		fmt.Println(cmd.String())
+		gologger.Info().Msgf(cmd.String())
 	} else {
 		cmd.Args = append(cmd.Args, "-silent")
 	}
 	data, err := cmd.Output()
 	if debug {
-		fmt.Println(string(data))
+		gologger.Info().Msgf(string(data))
 	}
 	if err != nil {
 		return nil, err
@@ -78,11 +78,11 @@ func RunNucleiBinaryAndGetLoadedTemplates(nucleiBinary string, debug bool, args 
 	cmd.Args = append(cmd.Args, "-duc") // disable auto updates
 	if debug {
 		cmd.Args = append(cmd.Args, "-debug")
-		fmt.Println(cmd.String())
+		gologger.Info().Msgf(cmd.String())
 	}
 	data, err := cmd.CombinedOutput()
 	if debug {
-		fmt.Println(string(data))
+		gologger.Info().Msgf(string(data))
 	}
 	if err != nil {
 		return "", err
@@ -97,11 +97,11 @@ func RunNucleiBinaryAndGetCombinedOutput(debug bool, args []string) (string, err
 	cmd := exec.Command("./nuclei", args...)
 	if debug {
 		cmd.Args = append(cmd.Args, "-debug")
-		fmt.Println(cmd.String())
+		gologger.Info().Msgf(cmd.String())
 	}
 	data, err := cmd.CombinedOutput()
 	if debug {
-		fmt.Println(string(data))
+		gologger.Info().Msgf(string(data))
 	}
 	if err != nil {
 		return "", err

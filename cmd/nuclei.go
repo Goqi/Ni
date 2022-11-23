@@ -40,7 +40,7 @@ func Nuclei() {
 
 	if options.ListDslSignatures {
 		gologger.Info().Msgf("The available custom DSL functions are:")
-		fmt.Println(dsl.GetPrintableDslFunctionSignatures(options.NoColor))
+		gologger.Info().Msgf(dsl.GetPrintableDslFunctionSignatures(options.NoColor))
 		return
 	}
 

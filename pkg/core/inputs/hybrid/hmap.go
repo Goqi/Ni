@@ -5,6 +5,7 @@ package hybrid
 import (
 	"Ernuclei/pkg/types"
 	"bufio"
+	"github.com/projectdiscovery/gologger"
 	"io"
 	"os"
 	"strings"
@@ -13,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/filekv"
 	"github.com/projectdiscovery/fileutil"
-	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"

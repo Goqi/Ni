@@ -28,6 +28,7 @@ import (
 	"Ernuclei/pkg/utils"
 	"Ernuclei/pkg/utils/ratelimit"
 	"Ernuclei/pkg/utils/stats"
+	yamlwrapper "Ernuclei/pkg/utils/yaml"
 	"bufio"
 	"bytes"
 	"context"
@@ -41,7 +42,6 @@ import (
 	"strings"
 	"time"
 
-	yamlwrapper "Ernuclei/pkg/utils/yaml"
 	"github.com/blang/semver"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
