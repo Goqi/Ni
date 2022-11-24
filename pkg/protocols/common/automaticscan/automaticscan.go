@@ -8,6 +8,7 @@ import (
 	"Ernuclei/pkg/protocols/http/httpclientpool"
 	"Ernuclei/pkg/templates"
 	"Ernuclei/pkg/templates/types"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -203,8 +204,15 @@ func (s *Service) processWappalyzerInputPair(input string) {
 	for _, t := range templatesList {
 		s.opts.Progress.AddToTotal(int64(t.Executer.Requests()))
 
+		//if s.opts.Options.VerboseVerbose {
+		//	gologger.Print().Msgf("%s\n", templates.TemplateLogMessage(t.ID,
+		//		t.Info.Name,
+		//		t.Info.Authors.ToSlice(),
+		//		t.Info.SeverityHolder.Severity))
+		//}
+
 		if s.opts.Options.VerboseVerbose {
-			gologger.Print().Msgf("%s\n", templates.TemplateLogMessage(t.ID,
+			fmt.Println("%s\n", templates.TemplateLogMessage(t.ID,
 				t.Info.Name,
 				t.Info.Authors.ToSlice(),
 				t.Info.SeverityHolder.Severity))

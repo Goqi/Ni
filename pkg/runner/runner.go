@@ -545,8 +545,8 @@ func (r *Runner) displayExecutionInfo(store *loader.Store) {
 		gologger.Info().Msgf("Using Nuclei Templates %s%s", r.templatesConfig.TemplateVersion, messageStr)
 	}
 	if len(store.Templates()) > 0 {
-		gologger.Info().Msgf("Templates added in last update: %d", r.countNewTemplates())
-		gologger.Info().Msgf("Templates loaded for scan: %d", len(store.Templates()))
+		//gologger.Info().Msgf("Pocs added in last update: %d", r.countNewTemplates())
+		gologger.Info().Msgf("Pocs loaded for scan: %d", len(store.Templates()))
 	}
 	if len(store.Workflows()) > 0 {
 		gologger.Info().Msgf("Workflows loaded for scan: %d", len(store.Workflows()))
