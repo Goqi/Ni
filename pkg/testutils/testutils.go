@@ -8,7 +8,6 @@ import (
 
 	"github.com/logrusorgru/aurora"
 
-	"github.com/projectdiscovery/gologger/levels"
 	"Ernuclei/pkg/catalog/disk"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/model/types/severity"
@@ -17,6 +16,7 @@ import (
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/protocols/common/protocolinit"
 	"Ernuclei/pkg/types"
+	"github.com/projectdiscovery/gologger/levels"
 )
 
 // Init initializes the protocols and their configurations

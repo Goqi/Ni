@@ -7,12 +7,12 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/http/httpclientpool"
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	"Ernuclei/pkg/protocols/common/contextargs"
+	"Ernuclei/pkg/protocols/http/httpclientpool"
 	"github.com/projectdiscovery/retryablehttp-go"
 	"github.com/remeh/sizedwaitgroup"
 )

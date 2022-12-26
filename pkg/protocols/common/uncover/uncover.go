@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"Ernuclei/pkg/templates"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/templates"
 	"github.com/projectdiscovery/ratelimit"
 	ucRunner "github.com/projectdiscovery/uncover/runner"
 	"github.com/projectdiscovery/uncover/uncover"

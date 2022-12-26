@@ -1,10 +1,10 @@
 package writer
 
 import (
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/output"
 	"Ernuclei/pkg/progress"
 	"Ernuclei/pkg/reporting"
-	"github.com/projectdiscovery/gologger"
 )
 
 // WriteResult is a helper for writing results to the output

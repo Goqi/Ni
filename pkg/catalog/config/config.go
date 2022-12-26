@@ -21,7 +21,7 @@ type Config struct {
 
 	TemplateVersion  string `json:"nuclei-templates-version,omitempty"`
 	NucleiVersion    string `json:"nuclei-version,omitempty"`
-	NucleiIgnoreHash string `json:"nuclei-ignore-hash,omitempty"`
+	NucleiIgnoreHash string `json:"ignore-hash,omitempty"`
 
 	NucleiLatestVersion          string `json:"nuclei-latest-version"`
 	NucleiTemplatesLatestVersion string `json:"nuclei-templates-latest-version"`
@@ -118,7 +118,7 @@ func WriteConfiguration(config *Config) error {
 	return nil
 }
 
-const nucleiIgnoreFile = "ignore"
+const nucleiIgnoreFile = ".nuclei-ignore"
 
 // IgnoreFile is an internal nuclei template blocking configuration file
 type IgnoreFile struct {
@@ -130,14 +130,14 @@ type IgnoreFile struct {
 func ReadIgnoreFile() IgnoreFile {
 	file, err := os.Open(GetIgnoreFilePath())
 	if err != nil {
-		gologger.Error().Msgf("Could not read nuclei-ignore file: %s\n", err)
+		gologger.Error().Msgf("Could not read ignore file: %s\n", err)
 		return IgnoreFile{}
 	}
 	defer file.Close()
 
 	ignore := IgnoreFile{}
 	if err := yaml.NewDecoder(file).Decode(&ignore); err != nil {
-		gologger.Error().Msgf("Could not parse nuclei-ignore file: %s\n", err)
+		gologger.Error().Msgf("Could not parse ignore file: %s\n", err)
 		return IgnoreFile{}
 	}
 	return ignore

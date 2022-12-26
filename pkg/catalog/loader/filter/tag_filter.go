@@ -4,12 +4,12 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/Knetic/govaluate"
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/model/types/severity"
 	"Ernuclei/pkg/operators/common/dsl"
 	"Ernuclei/pkg/templates"
 	"Ernuclei/pkg/templates/types"
-	"github.com/Knetic/govaluate"
-	"github.com/projectdiscovery/gologger"
 )
 
 // TagFilter is used to filter nuclei templates for tag based execution

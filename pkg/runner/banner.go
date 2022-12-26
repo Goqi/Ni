@@ -7,16 +7,10 @@ import (
 	"github.com/projectdiscovery/gologger"
 )
 
-var banner = fmt.Sprintf(`
-                     __     _
-   ____  __  _______/ /__  (_)
-  / __ \/ / / / ___/ / _ \/ /
- / / / / /_/ / /__/ /  __/ /
-/_/ /_/\__,_/\___/_/\___/_/   v%s
-`, config.Version)
+var banner = fmt.Sprintf(`Cell-nuclei二开 v%s`, config.Version)
 
 // showBanner is used to show the banner to the user
 func showBanner() {
 	gologger.Print().Msgf("%s\n", banner)
-	gologger.Print().Msgf("\t\tgithub.com/Goqi/Ernuclei\n\n")
+	gologger.Print().Msgf("https://github.com/Goqi/Cell\n\n")
 }

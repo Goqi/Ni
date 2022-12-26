@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"Ernuclei/pkg/model/types/stringslice"
 	"github.com/projectdiscovery/goflags"
+	"Ernuclei/pkg/model/types/stringslice"
 )
 
 // Severities used by the goflags library for parsing an array of Severity types, passed as CLI arguments from the user

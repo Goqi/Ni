@@ -4,6 +4,7 @@ package templates
 import (
 	"encoding/json"
 
+	validate "github.com/go-playground/validator/v10"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/protocols/common/variables"
@@ -17,7 +18,6 @@ import (
 	"Ernuclei/pkg/protocols/whois"
 	"Ernuclei/pkg/templates/types"
 	"Ernuclei/pkg/workflows"
-	validate "github.com/go-playground/validator/v10"
 	"go.uber.org/multierr"
 	"gopkg.in/yaml.v2"
 )

@@ -1,4 +1,4 @@
-# Ernuclei-nuclei二开
+# Cell-nuclei二开
 
 本项目是nuclei的二开项目。[nuclei](https://github.com/projectdiscovery/nuclei)是projectdiscovery项目开发的一款简单的基于YAML的DSL的快速且可定制的漏洞扫描器。有各种类型的漏洞模板，漏洞规则极其丰富。但原程序某些功能不太满意，认为存在一些弊端，所以计划进行二开！未来的未来重点使用二开nuclei，尽量避免重复造轮子。作者：[0e0w](https://github.com/0e0w)
 
@@ -18,9 +18,11 @@
 - [ ] 优化结果保存。
 - [ ] 添加自动代理扫描模块。
 - [ ] 扫描资产中添加默认http://。
-- [ ] 随机UserAgent。
 - [ ] 添加xray和goby的pocs扫描。
 - [ ] 优化POC：分类与新增。
+- [ ] 修改完善pocs模板，从Cell下载。
+- [ ] 删掉自认为很少使用的功能。
+- [x] 随机UserAgent。nuclei从2.8.3已经是随机UA。
 
 ## 02-静态特征修改
 

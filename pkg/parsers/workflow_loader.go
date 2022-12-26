@@ -1,10 +1,10 @@
 package parsers
 
 import (
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/catalog/loader/filter"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/protocols"
-	"github.com/projectdiscovery/gologger"
 )
 
 type workflowLoader struct {

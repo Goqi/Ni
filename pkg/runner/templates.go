@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"Ernuclei/pkg/catalog/loader"
 	"github.com/alecthomas/chroma/quick"
 	"github.com/logrusorgru/aurora"
-	"Ernuclei/pkg/catalog/loader"
 
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/parsers"
 	"Ernuclei/pkg/templates"
 	"Ernuclei/pkg/types"
+	"github.com/projectdiscovery/gologger"
 )
 
 // log available templates for verbose (-vv)

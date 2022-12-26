@@ -6,6 +6,9 @@ config
 release
 pocs
 
+build-win.bat
+upx.exe
+
 *.cfg
 ip.txt
 ips.txt

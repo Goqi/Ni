@@ -4,8 +4,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/pkg/errors"
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/catalog"
 	"Ernuclei/pkg/catalog/config"
 	"Ernuclei/pkg/catalog/loader/filter"
@@ -17,6 +15,8 @@ import (
 	"Ernuclei/pkg/types"
 	"Ernuclei/pkg/utils/stats"
 	"Ernuclei/pkg/workflows"
+	"github.com/pkg/errors"
+	"github.com/projectdiscovery/gologger"
 )
 
 // Config contains the configuration options for the loader

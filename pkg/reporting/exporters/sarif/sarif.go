@@ -6,9 +6,9 @@ import (
 	"path"
 	"sync"
 
-	"github.com/pkg/errors"
 	"Ernuclei/pkg/catalog/config"
 	"Ernuclei/pkg/output"
+	"github.com/pkg/errors"
 	"github.com/projectdiscovery/sarif"
 )
 
