@@ -28,7 +28,7 @@ type Config struct {
 }
 
 // nucleiConfigFilename is the filename of nuclei configuration file.
-const nucleiConfigFilename = ".templates-config.json"
+const nucleiConfigFilename = "templates-config.json"
 
 // Version is the current version of nuclei
 const Version = `1.0`
@@ -52,22 +52,25 @@ func getConfigDetails() (string, error) {
 }
 
 // GetConfigDir returns the nuclei configuration directory
-//func GetConfigDir() (string, error) {
-//	var (
-//		home string
-//		err  error
-//	)
-//	if customConfigDirectory != "" {
-//		home = customConfigDirectory
-//		return home, nil
+//
+//	func GetConfigDir() (string, error) {
+//		var (
+//			home string
+//			err  error
+//		)
+//		if customConfigDirectory != "" {
+//			home = customConfigDirectory
+//			return home, nil
+//		}
+//		home, err = homedir.Dir()
+//		if err != nil {
+//			return "", err
+//		}
+//		return filepath.Join(home, ".config", "nuclei"), nil
 //	}
-//	home, err = homedir.Dir()
-//	if err != nil {
-//		return "", err
-//	}
-//	return filepath.Join(home, ".config", "nuclei"), nil
-//}
+//
 
+// GetConfigDir 修改config目录 配置文件
 func GetConfigDir() (string, error) {
 	home := "\\pocs"
 	currentDir, _ := os.Getwd()
@@ -115,7 +118,7 @@ func WriteConfiguration(config *Config) error {
 	return nil
 }
 
-const nucleiIgnoreFile = ".nuclei-ignore"
+const nucleiIgnoreFile = "ignore"
 
 // IgnoreFile is an internal nuclei template blocking configuration file
 type IgnoreFile struct {

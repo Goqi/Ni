@@ -312,7 +312,7 @@ on extensive configurability, massive extensibility and ease of use.`)
 		originalIgnorePath := config.GetIgnoreFilePath()
 		config.SetCustomConfigDirectory(options.CustomConfigDir)
 		configPath := filepath.Join(options.CustomConfigDir, "config.yaml")
-		ignoreFile := filepath.Join(options.CustomConfigDir, ".nuclei-ignore")
+		ignoreFile := filepath.Join(options.CustomConfigDir, "nuclei-ignore")
 		if !fileutil.FileExists(ignoreFile) {
 			_ = fileutil.CopyFile(originalIgnorePath, ignoreFile)
 		}

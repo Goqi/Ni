@@ -40,8 +40,8 @@ import (
 const (
 	userName             = "projectdiscovery"
 	repoName             = "nuclei-templates"
-	nucleiIgnoreFile     = ".nuclei-ignore"
-	nucleiConfigFilename = ".templates-config.json"
+	nucleiIgnoreFile     = "nuclei-ignore"
+	nucleiConfigFilename = "templates-config.json"
 )
 
 var reVersion = regexp.MustCompile(`\d+\.\d+\.\d+`)
