@@ -69,7 +69,7 @@ func getConfigDetails() (string, error) {
 
 // GetConfigDir returns the nuclei configuration directory
 
-// GetConfigDir 修改config目录
+// GetConfigDir 修改config目录 配置文件
 func GetConfigDir() (string, error) {
 	home := "\\pocs"
 	currentDir, _ := os.Getwd()

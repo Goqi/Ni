@@ -2,14 +2,30 @@
 
 本项目是nuclei的二开项目。[nuclei](https://github.com/projectdiscovery/nuclei)是projectdiscovery项目开发的一款简单的基于YAML的DSL的快速且可定制的漏洞扫描器。有各种类型的漏洞模板，漏洞规则极其丰富。但原程序某些功能不太满意，认为存在一些弊端，所以计划进行二开！未来的未来重点使用二开nuclei，尽量避免重复造轮子。作者：[0e0w](https://github.com/0e0w)
 
-本项目创建于2022年11月22日，最近的更新时间为2022年11月22日。
+本项目创建于2022年11月22日，最近的更新时间为2022年11月25日。
 
 - [01-项目结构修改](https://github.com/Goqi/Ernuclei#01-%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84%E4%BF%AE%E6%94%B9)
 - [02-项目功能修改](https://github.com/Goqi/Ernuclei#02-%E9%A1%B9%E7%9B%AE%E5%8A%9F%E8%83%BD%E4%BF%AE%E6%94%B9)
 - [03-静态特征修改](https://github.com/Goqi/Ernuclei#03-%E9%9D%99%E6%80%81%E7%89%B9%E5%BE%81%E4%BF%AE%E6%94%B9)
 - [04-参考项目资源](https://github.com/Goqi/Ernuclei#04-%E5%8F%82%E8%80%83%E9%A1%B9%E7%9B%AE%E8%B5%84%E6%BA%90)
 
-## 01-项目结构修改
+## 01-项目功能修改
+
+- [x] 将config和nuclei-templates目录自动下载解压到程序本目录。
+- [ ] 将nuclei-templates打包到程序中。
+- [ ] 优化结果保存。
+- [ ] 添加自动代理扫描模块。
+- [ ] 扫描资产中添加默认http://。
+- [ ] 随机UserAgent。
+- [ ] 添加xray和goby的pocs扫描。
+- [ ] 优化POC：分类与新增。
+
+## 02-静态特征修改
+
+- [ ] 去除日志打印相关内容#Todo
+- [ ] 去除nuclei相关的字段内容#Todo
+
+## 03-项目结构修改
 
 本项目基于nuclei-v2.7.9。对项目结构进行了调整，调整后的项目结构如下：
 
@@ -386,21 +402,6 @@
             doc.go
             workflows.go
 ```
-
-## 02-项目功能修改
-
-- [x] 将config和nuclei-templates目录自动下载解压到程序本目录。
-- [ ] 将nuclei-templates打包到程序中。
-- [ ] 优化结果保存。
-- [ ] 添加自动代理扫描模块。
-- [ ] 扫描资产中添加默认http://。
-- [ ] 随机UserAgent。
-- [ ] 添加xray和goby的pocs扫描。
-
-## 03-静态特征修改
-
-- [ ] 去除日志打印相关内容#Todo
-- [ ] 去除nuclei相关的字段内容#Todo
 
 ## 04-参考项目资源
 
