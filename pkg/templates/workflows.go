@@ -3,10 +3,10 @@ package templates
 import (
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/workflows"
-	"github.com/projectdiscovery/gologger"
 )
 
 // compileWorkflow compiles the workflow for execution

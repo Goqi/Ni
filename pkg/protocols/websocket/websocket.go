@@ -16,6 +16,8 @@ import (
 	"github.com/gobwas/ws/wsutil"
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/operators"
 	"Ernuclei/pkg/operators/extractors"
 	"Ernuclei/pkg/operators/matchers"
@@ -30,8 +32,6 @@ import (
 	"Ernuclei/pkg/protocols/network/networkclientpool"
 	templateTypes "Ernuclei/pkg/templates/types"
 	"Ernuclei/pkg/types"
-	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"github.com/projectdiscovery/gologger"
 )
 
 // Request is a request for the Websocket protocol

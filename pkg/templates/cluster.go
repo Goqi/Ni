@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/operators"
 	"Ernuclei/pkg/output"
@@ -13,7 +14,6 @@ import (
 	"Ernuclei/pkg/protocols/common/helpers/writer"
 	"Ernuclei/pkg/protocols/http"
 	"Ernuclei/pkg/templates/types"
-	"github.com/projectdiscovery/gologger"
 	cryptoutil "github.com/projectdiscovery/utils/crypto"
 )
 

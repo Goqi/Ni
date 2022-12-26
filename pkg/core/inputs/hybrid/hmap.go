@@ -55,6 +55,7 @@ func New(options *types.Options) (*Input, error) {
 	if options.Stream {
 		fkvOptions := filekv.DefaultOptions
 		if tmpFileName, err := fileutil.GetTempFileName(); err != nil {
+
 			return nil, errors.Wrap(err, "could not create temporary input file")
 		} else {
 			fkvOptions.Path = tmpFileName

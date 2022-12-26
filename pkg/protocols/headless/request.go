@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/output"
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/protocols/common/contextargs"
@@ -17,7 +18,6 @@ import (
 	"Ernuclei/pkg/protocols/common/utils/vardump"
 	"Ernuclei/pkg/protocols/http/utils"
 	templateTypes "Ernuclei/pkg/templates/types"
-	"github.com/projectdiscovery/gologger"
 )
 
 var _ protocols.Request = &Request{}
