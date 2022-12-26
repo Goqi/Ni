@@ -12,10 +12,8 @@
 ## 01-项目功能修改
 
 - [x] 将config和nuclei-templates目录自动下载解压到程序本目录。
-
   - [config.go](https://github.com/Goqi/Ernuclei/blob/main/pkg/catalog/config/config.go)
   - [template_path.go](https://github.com/Goqi/Ernuclei/blob/main/pkg/utils/template_path.go)
-
 - [ ] 将nuclei-templates打包到程序中。
 - [ ] 优化结果保存。
 - [ ] 添加自动代理扫描模块。
