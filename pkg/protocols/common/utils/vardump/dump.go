@@ -7,6 +7,9 @@ import (
 	"Ernuclei/pkg/types"
 )
 
+// EnableVarDump enables var dump for debugging optionally
+var EnableVarDump bool
+
 // DumpVariables writes the truncated dump of variables to a string
 // in a formatted key-value manner.
 //

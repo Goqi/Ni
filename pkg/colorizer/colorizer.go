@@ -1,10 +1,11 @@
 package colorizer
 
 import (
-	"Ernuclei/pkg/model/types/severity"
 	"fmt"
 
 	"github.com/logrusorgru/aurora"
+
+	"Ernuclei/pkg/model/types/severity"
 )
 
 const (

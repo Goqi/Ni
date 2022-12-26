@@ -1,11 +1,11 @@
 package severity
 
 import (
-	"Ernuclei/pkg/model/types/stringslice"
 	"encoding/json"
 	"fmt"
 	"strings"
 
+	"Ernuclei/pkg/model/types/stringslice"
 	"github.com/projectdiscovery/goflags"
 )
 

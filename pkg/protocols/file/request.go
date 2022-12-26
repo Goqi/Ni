@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/remeh/sizedwaitgroup"
 
-	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/operators"
 	"Ernuclei/pkg/operators/matchers"
 	"Ernuclei/pkg/output"
@@ -22,7 +21,8 @@ import (
 	"Ernuclei/pkg/protocols/common/helpers/eventcreator"
 	"Ernuclei/pkg/protocols/common/helpers/responsehighlighter"
 	templateTypes "Ernuclei/pkg/templates/types"
-	"github.com/projectdiscovery/sliceutil"
+	"github.com/projectdiscovery/gologger"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 var _ protocols.Request = &Request{}
@@ -47,7 +47,7 @@ var emptyResultErr = errors.New("Empty result")
 // ExecuteWithResults executes the protocol requests and returns results instead of writing them.
 func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata, previous output.InternalEvent, callback protocols.OutputEventCallback) error {
 	wg := sizedwaitgroup.New(request.options.Options.BulkSize)
-	err := request.getInputPaths(input.Input, func(filePath string) {
+	err := request.getInputPaths(input.MetaInput.Input, func(filePath string) {
 		wg.Add()
 		func(filePath string) {
 			defer wg.Done()
@@ -63,7 +63,7 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 						// every new file in the compressed multi-file archive counts 1
 						request.options.Progress.AddToTotal(1)
 						archiveFileName := filepath.Join(filePath, file.Name())
-						event, fileMatches, err := request.processReader(file.ReadCloser, archiveFileName, input.Input, file.Size(), previous)
+						event, fileMatches, err := request.processReader(file.ReadCloser, archiveFileName, input.MetaInput.Input, file.Size(), previous)
 						if err != nil {
 							if errors.Is(err, emptyResultErr) {
 								// no matches but one file elaborated
@@ -116,7 +116,7 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 					_ = tmpFileOut.Sync()
 					// rewind the file
 					_, _ = tmpFileOut.Seek(0, 0)
-					event, fileMatches, err := request.processReader(tmpFileOut, filePath, input.Input, fileStat.Size(), previous)
+					event, fileMatches, err := request.processReader(tmpFileOut, filePath, input.MetaInput.Input, fileStat.Size(), previous)
 					if err != nil {
 						if errors.Is(err, emptyResultErr) {
 							// no matches but one file elaborated
@@ -136,7 +136,7 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 			default:
 				// normal file - increments the counter by 1
 				request.options.Progress.AddToTotal(1)
-				event, fileMatches, err := request.processFile(filePath, input.Input, previous)
+				event, fileMatches, err := request.processFile(filePath, input.MetaInput.Input, previous)
 				if err != nil {
 					if errors.Is(err, emptyResultErr) {
 						// no matches but one file elaborated
@@ -158,7 +158,7 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 
 	wg.Wait()
 	if err != nil {
-		request.options.Output.Request(request.options.TemplatePath, input.Input, request.Type().String(), err)
+		request.options.Output.Request(request.options.TemplatePath, input.MetaInput.Input, request.Type().String(), err)
 		request.options.Progress.IncrementFailedRequestsBy(1)
 		return errors.Wrap(err, "could not send file request")
 	}
@@ -317,7 +317,7 @@ func (request *Request) buildEvent(input, filePath string, fileMatches []FileMat
 					result.Lines = append(result.Lines, exprLines[extractedResult]...)
 				}
 			}
-			result.Lines = sliceutil.DedupeInt(result.Lines)
+			result.Lines = sliceutil.Dedupe(result.Lines)
 		}
 	}
 	return event

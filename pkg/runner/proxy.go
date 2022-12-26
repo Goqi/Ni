@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"Ernuclei/pkg/types"
 	"bufio"
 	"errors"
 	"fmt"
@@ -11,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/projectdiscovery/fileutil"
+	"Ernuclei/pkg/types"
 	"github.com/projectdiscovery/gologger"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 var proxyURLList []url.URL

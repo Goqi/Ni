@@ -1,14 +1,6 @@
 package automaticscan
 
 import (
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/catalog/loader"
-	"Ernuclei/pkg/core"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/http/httpclientpool"
-	"Ernuclei/pkg/templates"
-	"Ernuclei/pkg/templates/types"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -18,8 +10,16 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
+	"Ernuclei/pkg/catalog/config"
+	"Ernuclei/pkg/catalog/loader"
+	"Ernuclei/pkg/core"
+	"Ernuclei/pkg/protocols"
+	"Ernuclei/pkg/protocols/common/contextargs"
+	"Ernuclei/pkg/protocols/http/httpclientpool"
+	"Ernuclei/pkg/templates"
+	"Ernuclei/pkg/templates/types"
 	"github.com/projectdiscovery/retryablehttp-go"
-	"github.com/projectdiscovery/sliceutil"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 	wappalyzer "github.com/projectdiscovery/wappalyzergo"
 	"gopkg.in/yaml.v2"
 )
@@ -133,20 +133,22 @@ func (s *Service) executeWappalyzerTechDetection() error {
 	// Iterate through each target making http request and identifying fingerprints
 	inputPool := s.engine.WorkPool().InputPool(types.HTTPProtocol)
 
-	s.target.Scan(func(value string) {
+	s.target.Scan(func(value *contextargs.MetaInput) bool {
 		inputPool.WaitGroup.Add()
 
-		go func(input string) {
+		go func(input *contextargs.MetaInput) {
 			defer inputPool.WaitGroup.Done()
+
 			s.processWappalyzerInputPair(input)
 		}(value)
+		return true
 	})
 	inputPool.WaitGroup.Wait()
 	return nil
 }
 
-func (s *Service) processWappalyzerInputPair(input string) {
-	req, err := retryablehttp.NewRequest(http.MethodGet, input, nil)
+func (s *Service) processWappalyzerInputPair(input *contextargs.MetaInput) {
+	req, err := retryablehttp.NewRequest(http.MethodGet, input.Input, nil)
 	if err != nil {
 		return
 	}
@@ -204,15 +206,8 @@ func (s *Service) processWappalyzerInputPair(input string) {
 	for _, t := range templatesList {
 		s.opts.Progress.AddToTotal(int64(t.Executer.Requests()))
 
-		//if s.opts.Options.VerboseVerbose {
-		//	gologger.Print().Msgf("%s\n", templates.TemplateLogMessage(t.ID,
-		//		t.Info.Name,
-		//		t.Info.Authors.ToSlice(),
-		//		t.Info.SeverityHolder.Severity))
-		//}
-
 		if s.opts.Options.VerboseVerbose {
-			fmt.Println("%s\n", templates.TemplateLogMessage(t.ID,
+			gologger.Print().Msgf("%s\n", templates.TemplateLogMessage(t.ID,
 				t.Info.Name,
 				t.Info.Authors.ToSlice(),
 				t.Info.SeverityHolder.Severity))

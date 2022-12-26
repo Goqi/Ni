@@ -8,8 +8,8 @@ import (
 	"github.com/alecthomas/jsonschema"
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/model/types/stringslice"
 	"github.com/projectdiscovery/goflags"
+	"Ernuclei/pkg/model/types/stringslice"
 )
 
 // ProtocolType is the type of the request protocol specified
@@ -24,6 +24,7 @@ const (
 	FileProtocol
 	// name:http
 	HTTPProtocol
+	OfflineHTTPProtocol
 	// name:headless
 	HeadlessProtocol
 	// name:network
@@ -156,7 +157,11 @@ func (protocolTypes *ProtocolTypes) UnmarshalYAML(unmarshal func(interface{}) er
 func (protocolTypes ProtocolTypes) String() string {
 	var stringTypes []string
 	for _, t := range protocolTypes {
-		stringTypes = append(stringTypes, t.String())
+		protocolMapping := t.String()
+		if protocolMapping != "" {
+			stringTypes = append(stringTypes, protocolMapping)
+		}
+
 	}
 	return strings.Join(stringTypes, ", ")
 }

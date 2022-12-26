@@ -1,8 +1,6 @@
 package runner
 
 import (
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/utils"
 	"archive/zip"
 	"bufio"
 	"bytes"
@@ -26,9 +24,13 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
-	"github.com/projectdiscovery/folderutil"
+	"Ernuclei/pkg/catalog/config"
+	"Ernuclei/pkg/external/customtemplates"
+	client "Ernuclei/pkg/protocols/common/updatecheck"
+	"Ernuclei/pkg/utils"
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/nuclei-updatecheck-api/client"
+	fileutil "github.com/projectdiscovery/utils/file"
+	folderutil "github.com/projectdiscovery/utils/folder"
 
 	"github.com/tj/go-update"
 	"github.com/tj/go-update/progress"
@@ -38,8 +40,8 @@ import (
 const (
 	userName             = "projectdiscovery"
 	repoName             = "nuclei-templates"
-	nucleiIgnoreFile     = "ignore"
-	nucleiConfigFilename = "templates.json"
+	nucleiIgnoreFile     = ".nuclei-ignore"
+	nucleiConfigFilename = ".templates-config.json"
 )
 
 var reVersion = regexp.MustCompile(`\d+\.\d+\.\d+`)
@@ -66,24 +68,24 @@ func (r *Runner) updateTemplates() error { // TODO this method does more than ju
 	if err != nil {
 		return err
 	}
-	if r.templatesConfig == nil {
-		currentConfig := &config.Config{
-			TemplatesDirectory: defaultTemplatesDirectory,
-			NucleiVersion:      config.Version,
-		}
-		r.templatesConfig = currentConfig
-		if writeErr := config.WriteConfiguration(currentConfig); writeErr != nil {
-			return errors.Wrap(writeErr, "could not write template configuration")
-		}
+	err = r.createDefaultConfig(defaultTemplatesDirectory)
+	if err != nil {
+		return err
 	}
+
 	if r.options.TemplatesDirectory == "" {
+		// if no -tud flag passed then read from template config
 		if r.templatesConfig.TemplatesDirectory != "" {
 			r.options.TemplatesDirectory = r.templatesConfig.TemplatesDirectory
 		} else {
 			r.options.TemplatesDirectory = defaultTemplatesDirectory
 		}
+	} else if r.templatesConfig.TemplatesDirectory != r.options.TemplatesDirectory {
+		// if -tud pass then update the templateConfig & it is diff then template config
+		r.templatesConfig.TemplatesDirectory, _ = filepath.Abs(r.options.TemplatesDirectory)
 	}
 
+	// if disable update check flag is passed and no update template flag is passed
 	if r.options.NoUpdateTemplates && !r.options.UpdateTemplates {
 		return nil
 	}
@@ -93,44 +95,20 @@ func (r *Runner) updateTemplates() error { // TODO this method does more than ju
 
 	ctx := context.Background()
 
-	// 自动下载yaml
-	//var noTemplatesFound bool
-	//if !fileutil.FolderExists(r.templatesConfig.TemplatesDirectory) {
-	//	noTemplatesFound = true
-	//	//noTemplatesFound = false
-	//
-	//}
-	//if r.templatesConfig.TemplateVersion == "" || (r.options.TemplatesDirectory != "" && r.templatesConfig.TemplatesDirectory != r.options.TemplatesDirectory) || noTemplatesFound {
-	//	gologger.Info().Msgf("nuclei-templates are not installed, installing...\n")
-	//
-	//	if r.options.TemplatesDirectory != "" && r.templatesConfig.TemplatesDirectory != r.options.TemplatesDirectory {
-	//		r.templatesConfig.TemplatesDirectory, _ = filepath.Abs(r.options.TemplatesDirectory)
-	//	}
-	//	r.fetchLatestVersionsFromGithub(configDir) // also fetch the latest versions
-	//
-	//	version, err := semver.Parse(r.templatesConfig.NucleiTemplatesLatestVersion)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	// Download the repository and write the revision to a HEAD file.
-	//	asset, getErr := r.getLatestReleaseFromGithub(r.templatesConfig.NucleiTemplatesLatestVersion)
-	//	if getErr != nil {
-	//		return getErr
-	//	}
-	//	gologger.Verbose().Msgf("Downloading nuclei-templates (v%s) to %s\n", version.String(), r.templatesConfig.TemplatesDirectory)
-	//
-	//	if _, err := r.downloadReleaseAndUnzip(ctx, version.String(), asset.GetZipballURL()); err != nil {
-	//		return err
-	//	}
-	//	r.templatesConfig.TemplateVersion = version.String()
-	//
-	//	if err := config.WriteConfiguration(r.templatesConfig); err != nil {
-	//		return err
-	//	}
-	//	gologger.Info().Msgf("Successfully downloaded nuclei-templates (v%s) to %s. GoodLuck!\n", version.String(), r.templatesConfig.TemplatesDirectory)
-	//	return nil
-	//}
+	var noTemplatesFound bool
+	if !fileutil.FolderExists(r.templatesConfig.TemplatesDirectory) {
+		noTemplatesFound = true
+	}
+	if r.templatesConfig.TemplateVersion == "" || noTemplatesFound {
+		return r.freshTemplateInstallation(configDir, ctx)
+	}
+
+	// download | update the custom templates repos
+	if r.options.UpdateTemplates {
+		for _, ct := range r.customTemplates {
+			ct.Update(r.templatesConfig.TemplatesDirectory, ctx)
+		}
+	}
 
 	latestVersion, currentVersion, err := getVersions(r)
 	if err != nil {
@@ -146,6 +124,59 @@ func (r *Runner) updateTemplates() error { // TODO this method does more than ju
 
 	if err := r.updateTemplatesWithVersion(latestVersion, currentVersion, r, ctx); err != nil {
 		return err
+	}
+	return nil
+}
+
+// createDefaultConfig create template config file is template config is not found
+func (r *Runner) createDefaultConfig(defaultTemplatesDirectory string) error {
+	// TODO remove customTemplate check in next version.
+	if r.templatesConfig == nil || r.templatesConfig.CustomGithubTemplatesDirectory == "" || r.templatesConfig.CustomS3TemplatesDirectory == "" {
+		currentConfig := &config.Config{
+			TemplatesDirectory:             defaultTemplatesDirectory,
+			NucleiVersion:                  config.Version,
+			CustomS3TemplatesDirectory:     filepath.Join(defaultTemplatesDirectory, customtemplates.CustomS3TemplateDirectory),
+			CustomGithubTemplatesDirectory: filepath.Join(defaultTemplatesDirectory, customtemplates.CustomGithubTemplateDirectory),
+		}
+		r.templatesConfig = currentConfig
+		if writeErr := config.WriteConfiguration(currentConfig); writeErr != nil {
+			return errors.Wrap(writeErr, "could not write template configuration")
+		}
+	}
+	return nil
+}
+
+// freshTemplateInstallation downloads the nuclei template and custom templates if new directory passed
+func (r *Runner) freshTemplateInstallation(configDir string, ctx context.Context) error {
+	gologger.Info().Msgf("nuclei-templates are not installed, installing...\n")
+
+	r.fetchLatestVersionsFromGithub(configDir) // also fetch the latest versions
+
+	version, err := semver.Parse(r.templatesConfig.NucleiTemplatesLatestVersion)
+	if err != nil {
+		return err
+	}
+
+	// Download the repository and write the revision to a HEAD file.
+	asset, getErr := r.getLatestReleaseFromGithub(r.templatesConfig.NucleiTemplatesLatestVersion)
+	if getErr != nil {
+		return getErr
+	}
+	gologger.Verbose().Msgf("Downloading nuclei-templates (v%s) to %s\n", version.String(), r.templatesConfig.TemplatesDirectory)
+
+	if _, err := r.downloadReleaseAndUnzip(ctx, version.String(), asset.GetZipballURL()); err != nil {
+		return err
+	}
+	r.templatesConfig.TemplateVersion = version.String()
+
+	if err := config.WriteConfiguration(r.templatesConfig); err != nil {
+		return err
+	}
+	gologger.Info().Msgf("Successfully downloaded nuclei-templates (v%s) to %s. GoodLuck!\n", version.String(), r.templatesConfig.TemplatesDirectory)
+
+	// case where -gtr flag is passed for the first time installation
+	for _, ct := range r.customTemplates {
+		ct.Download(r.templatesConfig.TemplatesDirectory, ctx)
 	}
 	return nil
 }
@@ -213,7 +244,7 @@ func (r *Runner) readInternalConfigurationFile(configDir string) error {
 	return nil
 }
 
-// checkNucleiIgnoreFileUpdates checks .ignore file for updates from GitHub
+// checkNucleiIgnoreFileUpdates checks .nuclei-ignore file for updates from GitHub
 func (r *Runner) checkNucleiIgnoreFileUpdates(configDir string) bool {
 	data, err := client.GetLatestIgnoreFile()
 	if err != nil {

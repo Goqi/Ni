@@ -1,14 +1,15 @@
 package protocolinit
 
 import (
+	"github.com/corpix/uarand"
+
 	"Ernuclei/pkg/protocols/common/protocolstate"
 	"Ernuclei/pkg/protocols/dns/dnsclientpool"
 	"Ernuclei/pkg/protocols/http/httpclientpool"
 	"Ernuclei/pkg/protocols/http/signerpool"
 	"Ernuclei/pkg/protocols/network/networkclientpool"
+	"Ernuclei/pkg/protocols/whois/rdapclientpool"
 	"Ernuclei/pkg/types"
-
-	"github.com/corpix/uarand"
 )
 
 // Init initializes the client pools for the protocols
@@ -27,7 +28,13 @@ func Init(options *types.Options) error {
 	if err := signerpool.Init(options); err != nil {
 		return err
 	}
-	return networkclientpool.Init(options)
+	if err := networkclientpool.Init(options); err != nil {
+		return err
+	}
+	if err := rdapclientpool.Init(options); err != nil {
+		return err
+	}
+	return nil
 }
 
 var userAgents = []string{

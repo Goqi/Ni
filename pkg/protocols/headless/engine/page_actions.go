@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"Ernuclei/pkg/protocols/common/generators"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/go-rod/rod/lib/utils"
 	"github.com/pkg/errors"
+	"Ernuclei/pkg/protocols/common/generators"
 	"github.com/segmentio/ksuid"
 )
 
@@ -424,7 +424,7 @@ func (p *Page) SelectInputElement(act *Action, out map[string]string /*TODO revi
 
 // WaitLoad waits for the page to load
 func (p *Page) WaitLoad(act *Action, out map[string]string /*TODO review unused parameter*/) error {
-	p.page.Timeout(2 * time.Second).WaitNavigation(proto.PageLifecycleEventNameDOMContentLoaded)()
+	p.page.Timeout(2 * time.Second).WaitNavigation(proto.PageLifecycleEventNameFirstMeaningfulPaint)()
 
 	// Wait for the window.onload event and also wait for the network requests
 	// to become idle for a maximum duration of 3 seconds. If the requests

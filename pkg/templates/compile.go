@@ -13,7 +13,7 @@ import (
 	"Ernuclei/pkg/protocols/offlinehttp"
 	"Ernuclei/pkg/templates/cache"
 	"Ernuclei/pkg/utils"
-	"github.com/projectdiscovery/stringsutil"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
 var (

@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"Ernuclei/pkg/operators/common/dsl"
 	"github.com/Knetic/govaluate"
+	"Ernuclei/pkg/operators/common/dsl"
 )
 
 var (
@@ -117,6 +117,9 @@ func ContainsVariablesWithIgnoreList(skipNames map[string]interface{}, items ...
 
 func hasLiteralsOnly(data string) bool {
 	expr, err := govaluate.NewEvaluableExpressionWithFunctions(data, dsl.HelperFunctions)
+	if err != nil {
+		return false
+	}
 	if err == nil && expr != nil {
 		_, err = expr.Evaluate(nil)
 		return err == nil

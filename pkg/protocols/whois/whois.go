@@ -6,8 +6,8 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/openrdap/rdap"
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/rdap"
 
 	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/operators"
@@ -20,6 +20,7 @@ import (
 	"Ernuclei/pkg/protocols/common/helpers/responsehighlighter"
 	"Ernuclei/pkg/protocols/common/replacer"
 	"Ernuclei/pkg/protocols/common/utils/vardump"
+	"Ernuclei/pkg/protocols/whois/rdapclientpool"
 	templateTypes "Ernuclei/pkg/templates/types"
 	"Ernuclei/pkg/types"
 )
@@ -57,12 +58,7 @@ func (request *Request) Compile(options *protocols.ExecuterOptions) error {
 	}
 
 	request.options = options
-	request.client = &rdap.Client{}
-	if request.options.Options.Verbose || request.options.Options.Debug || request.options.Options.DebugRequests {
-		request.client.Verbose = func(text string) {
-			gologger.Debug().Msgf("rdap: %s", text)
-		}
-	}
+	request.client, _ = rdapclientpool.Get(options.Options, nil)
 
 	if len(request.Matchers) > 0 || len(request.Extractors) > 0 {
 		compiled := &request.Operators
@@ -89,9 +85,9 @@ func (request *Request) GetID() string {
 // ExecuteWithResults executes the protocol requests and returns results instead of writing them.
 func (request *Request) ExecuteWithResults(input *contextargs.Context, dynamicValues, previous output.InternalEvent, callback protocols.OutputEventCallback) error {
 	// generate variables
-	variables := generateVariables(input.Input)
+	variables := generateVariables(input.MetaInput.Input)
 
-	if request.options.Options.Debug || request.options.Options.DebugRequests {
+	if vardump.EnableVarDump {
 		gologger.Debug().Msgf("Protocol request variables: \n%s\n", vardump.DumpVariables(variables))
 	}
 

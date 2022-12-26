@@ -1,7 +1,6 @@
 package loader
 
 import (
-	"Ernuclei/pkg/utils"
 	"bufio"
 	"fmt"
 	"net/http"
@@ -9,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"Ernuclei/pkg/utils"
 )
 
 type ContentType string

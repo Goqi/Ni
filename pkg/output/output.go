@@ -1,12 +1,6 @@
 package output
 
 import (
-	"Ernuclei/pkg/colorizer"
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/model/types/severity"
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/types"
-	"Ernuclei/pkg/utils"
 	"fmt"
 	"io"
 	"os"
@@ -16,12 +10,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/logrusorgru/aurora"
-	"github.com/pkg/errors"
-	"github.com/projectdiscovery/fileutil"
+
+	"Ernuclei/pkg/colorizer"
+	"Ernuclei/pkg/model"
+	"Ernuclei/pkg/model/types/severity"
+	"Ernuclei/pkg/operators"
+	"Ernuclei/pkg/types"
+	"Ernuclei/pkg/utils"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/interactsh/pkg/server"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 // Writer is an interface which writes output to somewhere for nuclei events.
@@ -44,7 +46,7 @@ type Writer interface {
 type StandardWriter struct {
 	json             bool
 	jsonReqResp      bool
-	noTimestamp      bool
+	timestamp        bool
 	noMetadata       bool
 	matcherStatus    bool
 	mutex            *sync.Mutex
@@ -121,7 +123,7 @@ type ResultEvent struct {
 }
 
 // NewStandardWriter creates a new output writer based on user configurations
-func NewStandardWriter(colors, noMetadata, noTimestamp, json, jsonReqResp, MatcherStatus, storeResponse bool, file, traceFile string, errorFile string, storeResponseDir string) (*StandardWriter, error) {
+func NewStandardWriter(colors, noMetadata, timestamp, json, jsonReqResp, MatcherStatus, storeResponse bool, file, traceFile string, errorFile string, storeResponseDir string) (*StandardWriter, error) {
 	auroraColorizer := aurora.NewAurora(colors)
 
 	var outputFile io.WriteCloser
@@ -159,7 +161,7 @@ func NewStandardWriter(colors, noMetadata, noTimestamp, json, jsonReqResp, Match
 		jsonReqResp:      jsonReqResp,
 		noMetadata:       noMetadata,
 		matcherStatus:    MatcherStatus,
-		noTimestamp:      noTimestamp,
+		timestamp:        timestamp,
 		aurora:           auroraColorizer,
 		mutex:            &sync.Mutex{},
 		outputFile:       outputFile,

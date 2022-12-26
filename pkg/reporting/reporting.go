@@ -20,8 +20,8 @@ import (
 	"Ernuclei/pkg/reporting/trackers/github"
 	"Ernuclei/pkg/reporting/trackers/gitlab"
 	"Ernuclei/pkg/reporting/trackers/jira"
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/retryablehttp-go"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 // Options is a configuration file for nuclei reporting module
@@ -182,7 +182,7 @@ func CreateConfigIfNotExists() error {
 	if err != nil {
 		return errors.Wrap(err, "could not get config directory")
 	}
-	reportingConfig := filepath.Join(config, "report.yaml")
+	reportingConfig := filepath.Join(config, "report-config.yaml")
 
 	if fileutil.FileExists(reportingConfig) {
 		return nil

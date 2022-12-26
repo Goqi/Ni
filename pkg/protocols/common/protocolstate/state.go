@@ -10,6 +10,7 @@ import (
 
 	"Ernuclei/pkg/types"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/networkpolicy"
 )
 
 // Dialer is a shared fastdialer instance for host DNS resolution
@@ -89,6 +90,9 @@ func Init(options *types.Options) error {
 	}
 	if options.ResolversFile != "" {
 		opts.BaseResolvers = options.InternalResolversList
+	}
+	if options.Sandbox {
+		opts.Deny = append(networkpolicy.DefaultIPv4DenylistRanges, networkpolicy.DefaultIPv6DenylistRanges...)
 	}
 	opts.WithDialerHistory = true
 	opts.WithZTLS = options.ZTLS

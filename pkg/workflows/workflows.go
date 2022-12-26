@@ -6,6 +6,7 @@ import (
 	"Ernuclei/pkg/model/types/stringslice"
 	"Ernuclei/pkg/operators"
 	"Ernuclei/pkg/protocols"
+	templateTypes "Ernuclei/pkg/templates/types"
 )
 
 // Workflow is a workflow to execute with chained requests, etc.
@@ -42,8 +43,9 @@ type WorkflowTemplate struct {
 
 // ProtocolExecuterPair is a pair of protocol executer and its options
 type ProtocolExecuterPair struct {
-	Executer protocols.Executer
-	Options  *protocols.ExecuterOptions
+	Executer     protocols.Executer
+	Options      *protocols.ExecuterOptions
+	TemplateType templateTypes.ProtocolType
 }
 
 // Matcher performs conditional matching on the workflow template results.
@@ -103,8 +105,8 @@ func (matcher *Matcher) Match(result *operators.Result) bool {
 	}
 
 	for i, name := range names {
-		_, matchOK := result.Matches[name]
-		_, extractOK := result.Extracts[name]
+		matchOK := result.HasMatch(name)
+		extractOK := result.HasExtract(name)
 
 		if !matchOK && !extractOK {
 			if matcher.condition == ANDCondition {

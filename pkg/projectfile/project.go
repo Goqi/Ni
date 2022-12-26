@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+
 	"github.com/projectdiscovery/hmap/store/hybrid"
 )
 

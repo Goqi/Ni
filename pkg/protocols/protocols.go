@@ -1,11 +1,12 @@
 package protocols
 
 import (
-	"Ernuclei/pkg/utils/ratelimit"
+	"github.com/projectdiscovery/ratelimit"
 
 	"github.com/logrusorgru/aurora"
 
 	"Ernuclei/pkg/catalog"
+	"Ernuclei/pkg/input"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/operators"
 	"Ernuclei/pkg/operators/extractors"
@@ -70,6 +71,8 @@ type ExecuterOptions struct {
 	Variables variables.Variable
 	// ExcludeMatchers is the list of matchers to exclude
 	ExcludeMatchers *excludematchers.ExcludeMatchers
+	// InputHelper is a helper for input normalization
+	InputHelper *input.Helper
 
 	Operators []*operators.Operators // only used by offlinehttp module
 

@@ -6,29 +6,32 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
-	"github.com/projectdiscovery/fileutil"
-	"github.com/projectdiscovery/gologger"
 	"gopkg.in/yaml.v2"
+
+	"github.com/projectdiscovery/gologger"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 // Config contains the internal nuclei engine configuration
 type Config struct {
-	//TemplatesDirectory string `json:"nuclei-templates-directory,omitempty"`
-	TemplatesDirectory string `json:"pocs,omitempty"`
+	TemplatesDirectory string `json:"nuclei-templates-directory,omitempty"`
+
+	CustomS3TemplatesDirectory     string `json:"custom-s3-templates-directory"`
+	CustomGithubTemplatesDirectory string `json:"custom-github-templates-directory"`
 
 	TemplateVersion  string `json:"nuclei-templates-version,omitempty"`
 	NucleiVersion    string `json:"nuclei-version,omitempty"`
-	NucleiIgnoreHash string `json:"ignore-hash,omitempty"`
+	NucleiIgnoreHash string `json:"nuclei-ignore-hash,omitempty"`
 
 	NucleiLatestVersion          string `json:"nuclei-latest-version"`
 	NucleiTemplatesLatestVersion string `json:"nuclei-templates-latest-version"`
 }
 
 // nucleiConfigFilename is the filename of nuclei configuration file.
-const nucleiConfigFilename = "templates.json"
+const nucleiConfigFilename = ".templates-config.json"
 
 // Version is the current version of nuclei
-const Version = `0.1`
+const Version = `0.2`
 
 var customConfigDirectory string
 
@@ -45,8 +48,6 @@ func getConfigDetails() (string, error) {
 	}
 	_ = os.MkdirAll(configDir, 0755)
 	templatesConfigFile := filepath.Join(configDir, nucleiConfigFilename)
-	//currentDir, _ := os.Getwd()
-	//templatesConfigFile := currentDir + "\\config1"
 	return templatesConfigFile, nil
 }
 
@@ -67,9 +68,6 @@ func getConfigDetails() (string, error) {
 //	return filepath.Join(home, ".config", "nuclei"), nil
 //}
 
-// GetConfigDir returns the nuclei configuration directory
-
-// GetConfigDir 修改config目录 配置文件
 func GetConfigDir() (string, error) {
 	home := "\\pocs"
 	currentDir, _ := os.Getwd()
@@ -117,7 +115,7 @@ func WriteConfiguration(config *Config) error {
 	return nil
 }
 
-const nucleiIgnoreFile = "ignore"
+const nucleiIgnoreFile = ".nuclei-ignore"
 
 // IgnoreFile is an internal nuclei template blocking configuration file
 type IgnoreFile struct {
@@ -129,14 +127,14 @@ type IgnoreFile struct {
 func ReadIgnoreFile() IgnoreFile {
 	file, err := os.Open(GetIgnoreFilePath())
 	if err != nil {
-		gologger.Error().Msgf("Could not read ignore file: %s\n", err)
+		gologger.Error().Msgf("Could not read nuclei-ignore file: %s\n", err)
 		return IgnoreFile{}
 	}
 	defer file.Close()
 
 	ignore := IgnoreFile{}
 	if err := yaml.NewDecoder(file).Decode(&ignore); err != nil {
-		gologger.Error().Msgf("Could not parse ignore file: %s\n", err)
+		gologger.Error().Msgf("Could not parse nuclei-ignore file: %s\n", err)
 		return IgnoreFile{}
 	}
 	return ignore

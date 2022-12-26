@@ -178,7 +178,7 @@ func ToMarkdownTableString(templateInfo *model.Info) string {
 		insertionOrderedStringMap.ForEach(func(key string, value interface{}) {
 			switch value := value.(type) {
 			case string:
-				if utils.IsNotBlank(value) {
+				if !utils.IsBlank(value) {
 					builder.WriteString(fmt.Sprintf("| %s | %s |\n", key, value))
 				}
 			}

@@ -1,13 +1,13 @@
 package extractors
 
 import (
-	"Ernuclei/pkg/types"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/antchfx/htmlquery"
 	"github.com/antchfx/xmlquery"
+	"strings"
+
+	"Ernuclei/pkg/types"
 )
 
 // ExtractRegex extracts text from a corpus and returns it

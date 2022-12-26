@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -16,18 +15,19 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/gologger"
+	"Ernuclei/pkg/protocols/common/contextargs"
 	"Ernuclei/pkg/protocols/common/expressions"
 	"Ernuclei/pkg/protocols/common/generators"
 	"Ernuclei/pkg/protocols/common/replacer"
 	"Ernuclei/pkg/protocols/common/utils/vardump"
-	"Ernuclei/pkg/protocols/dns"
 	"Ernuclei/pkg/protocols/http/race"
 	"Ernuclei/pkg/protocols/http/raw"
+	"Ernuclei/pkg/protocols/http/utils"
 	"Ernuclei/pkg/types"
-	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/rawhttp"
 	"github.com/projectdiscovery/retryablehttp-go"
-	"github.com/projectdiscovery/stringsutil"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
 var (
@@ -38,13 +38,14 @@ const evaluateHelperExpressionErrorMessage = "could not evaluate helper expressi
 
 // generatedRequest is a single generated request wrapped for a template request
 type generatedRequest struct {
-	original        *Request
-	rawRequest      *raw.Request
-	meta            map[string]interface{}
-	pipelinedClient *rawhttp.PipelineClient
-	request         *retryablehttp.Request
-	dynamicValues   map[string]interface{}
-	interactshURLs  []string
+	original             *Request
+	rawRequest           *raw.Request
+	meta                 map[string]interface{}
+	pipelinedClient      *rawhttp.PipelineClient
+	request              *retryablehttp.Request
+	dynamicValues        map[string]interface{}
+	interactshURLs       []string
+	customCancelFunction context.CancelFunc
 }
 
 func (g *generatedRequest) URL() string {
@@ -59,7 +60,7 @@ func (g *generatedRequest) URL() string {
 
 // Make creates a http request for the provided input.
 // It returns io.EOF as error when all the requests have been exhausted.
-func (r *requestGenerator) Make(ctx context.Context, baseURL, data string, payloads, dynamicValues map[string]interface{}) (*generatedRequest, error) {
+func (r *requestGenerator) Make(ctx context.Context, input *contextargs.Context, data string, payloads, dynamicValues map[string]interface{}) (*generatedRequest, error) {
 	if r.request.SelfContained {
 		return r.makeSelfContainedRequest(ctx, data, payloads, dynamicValues)
 	}
@@ -74,7 +75,7 @@ func (r *requestGenerator) Make(ctx context.Context, baseURL, data string, paylo
 		}
 	}
 
-	parsed, err := url.Parse(baseURL)
+	parsed, err := url.Parse(input.MetaInput.Input)
 	if err != nil {
 		return nil, err
 	}
@@ -94,10 +95,10 @@ func (r *requestGenerator) Make(ctx context.Context, baseURL, data string, paylo
 	}
 
 	values := generators.MergeMaps(
-		generators.MergeMaps(dynamicValues, GenerateVariables(parsed, trailingSlash)),
+		generators.MergeMaps(dynamicValues, utils.GenerateVariablesWithURL(parsed, trailingSlash, contextargs.GenerateVariables(input))),
 		generators.BuildPayloadFromOptions(r.request.options.Options),
 	)
-	if r.options.Options.Debug || r.options.Options.DebugRequests {
+	if vardump.EnableVarDump {
 		gologger.Debug().Msgf("Protocol request variables: \n%s\n", vardump.DumpVariables(values))
 	}
 
@@ -152,10 +153,8 @@ func (r *requestGenerator) makeSelfContainedRequest(ctx context.Context, data st
 			if err := expressions.ContainsVariablesWithIgnoreList(ignoreList, parts[1]); err != nil {
 				return nil, err
 			}
-		} else { // the url might contain placeholders
-			if err := expressions.ContainsUnresolvedVariables(parts[1]); err != nil {
-				return nil, err
-			}
+		} else if err := expressions.ContainsUnresolvedVariables(parts[1]); err != nil { // the url might contain placeholders
+			return nil, err
 		}
 
 		parsed, err := url.Parse(parts[1])
@@ -163,7 +162,7 @@ func (r *requestGenerator) makeSelfContainedRequest(ctx context.Context, data st
 			return nil, fmt.Errorf("could not parse request URL: %w", err)
 		}
 		values = generators.MergeMaps(
-			generators.MergeMaps(dynamicValues, GenerateVariables(parsed, false)),
+			generators.MergeMaps(dynamicValues, utils.GenerateVariablesWithURL(parsed, false, nil)),
 			values,
 		)
 
@@ -297,11 +296,20 @@ func (r *requestGenerator) handleRawWithPayloads(ctx context.Context, rawRequest
 		return nil, err
 	}
 
-	if reqWithAnnotations, hasAnnotations := r.request.parseAnnotations(rawRequest, req); hasAnnotations {
-		request.Request = reqWithAnnotations
+	generatedRequest := &generatedRequest{
+		request:        request,
+		meta:           generatorValues,
+		original:       r.request,
+		dynamicValues:  finalValues,
+		interactshURLs: r.interactshURLs,
 	}
 
-	return &generatedRequest{request: request, meta: generatorValues, original: r.request, dynamicValues: finalValues, interactshURLs: r.interactshURLs}, nil
+	if reqWithAnnotations, cancelFunc, hasAnnotations := r.request.parseAnnotations(rawRequest, req); hasAnnotations {
+		generatedRequest.request.Request = reqWithAnnotations
+		generatedRequest.customCancelFunction = cancelFunc
+	}
+
+	return generatedRequest, nil
 }
 
 // fillRequest fills various headers in the request with values
@@ -381,46 +389,4 @@ func setHeader(req *http.Request, name, value string) {
 	if name == "Host" {
 		req.Host = value
 	}
-}
-
-// GenerateVariables will create default variables after parsing a url
-func GenerateVariables(parsed *url.URL, trailingSlash bool) map[string]interface{} {
-	domain := parsed.Host
-	if strings.Contains(parsed.Host, ":") {
-		domain = strings.Split(parsed.Host, ":")[0]
-	}
-
-	port := parsed.Port()
-	if port == "" {
-		if parsed.Scheme == "https" {
-			port = "443"
-		} else if parsed.Scheme == "http" {
-			port = "80"
-		}
-	}
-
-	if trailingSlash {
-		parsed.Path = strings.TrimSuffix(parsed.Path, "/")
-	}
-
-	escapedPath := parsed.EscapedPath()
-	directory := path.Dir(escapedPath)
-	if directory == "." {
-		directory = ""
-	}
-	base := path.Base(escapedPath)
-	if base == "." {
-		base = ""
-	}
-	httpVariables := map[string]interface{}{
-		"BaseURL":  parsed.String(),
-		"RootURL":  fmt.Sprintf("%s://%s", parsed.Scheme, parsed.Host),
-		"Hostname": parsed.Host,
-		"Host":     domain,
-		"Port":     port,
-		"Path":     directory,
-		"File":     base,
-		"Scheme":   parsed.Scheme,
-	}
-	return generators.MergeMaps(httpVariables, dns.GenerateVariables(domain))
 }

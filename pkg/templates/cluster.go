@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/operators"
 	"Ernuclei/pkg/output"
@@ -12,8 +13,8 @@ import (
 	"Ernuclei/pkg/protocols/common/contextargs"
 	"Ernuclei/pkg/protocols/common/helpers/writer"
 	"Ernuclei/pkg/protocols/http"
-	"github.com/projectdiscovery/cryptoutil"
-	"github.com/projectdiscovery/gologger"
+	"Ernuclei/pkg/templates/types"
+	cryptoutil "github.com/projectdiscovery/utils/crypto"
 )
 
 // Cluster clusters a list of templates into a lesser number if possible based
@@ -89,7 +90,7 @@ func ClusterID(templates []*Template) string {
 }
 
 func ClusterTemplates(templatesList []*Template, options protocols.ExecuterOptions) ([]*Template, int) {
-	if options.Options.OfflineHTTP {
+	if options.Options.OfflineHTTP || options.Options.DisableClustering {
 		return templatesList, 0
 	}
 
@@ -183,9 +184,15 @@ func (e *ClusterExecuter) Requests() int {
 func (e *ClusterExecuter) Execute(input *contextargs.Context) (bool, error) {
 	var results bool
 
+	inputItem := input.Clone()
+	if e.options.InputHelper != nil && input.MetaInput.Input != "" {
+		if inputItem.MetaInput.Input = e.options.InputHelper.Transform(input.MetaInput.Input, types.HTTPProtocol); input.MetaInput.Input == "" {
+			return false, nil
+		}
+	}
 	previous := make(map[string]interface{})
 	dynamicValues := make(map[string]interface{})
-	err := e.requests.ExecuteWithResults(input, dynamicValues, previous, func(event *output.InternalWrappedEvent) {
+	err := e.requests.ExecuteWithResults(inputItem, dynamicValues, previous, func(event *output.InternalWrappedEvent) {
 		for _, operator := range e.operators {
 			result, matched := operator.operator.Execute(event.InternalEvent, e.requests.Match, e.requests.Extract, e.options.Options.Debug || e.options.Options.DebugResponse)
 			event.InternalEvent["template-id"] = operator.templateID
@@ -208,7 +215,7 @@ func (e *ClusterExecuter) Execute(input *contextargs.Context) (bool, error) {
 		}
 	})
 	if err != nil && e.options.HostErrorsCache != nil {
-		e.options.HostErrorsCache.MarkFailed(input.Input, err)
+		e.options.HostErrorsCache.MarkFailed(input.MetaInput.Input, err)
 	}
 	return results, err
 }
@@ -216,7 +223,14 @@ func (e *ClusterExecuter) Execute(input *contextargs.Context) (bool, error) {
 // ExecuteWithResults executes the protocol requests and returns results instead of writing them.
 func (e *ClusterExecuter) ExecuteWithResults(input *contextargs.Context, callback protocols.OutputEventCallback) error {
 	dynamicValues := make(map[string]interface{})
-	err := e.requests.ExecuteWithResults(input, dynamicValues, nil, func(event *output.InternalWrappedEvent) {
+
+	inputItem := input.Clone()
+	if e.options.InputHelper != nil && input.MetaInput.Input != "" {
+		if inputItem.MetaInput.Input = e.options.InputHelper.Transform(input.MetaInput.Input, types.HTTPProtocol); input.MetaInput.Input == "" {
+			return nil
+		}
+	}
+	err := e.requests.ExecuteWithResults(inputItem, dynamicValues, nil, func(event *output.InternalWrappedEvent) {
 		for _, operator := range e.operators {
 			result, matched := operator.operator.Execute(event.InternalEvent, e.requests.Match, e.requests.Extract, e.options.Options.Debug || e.options.Options.DebugResponse)
 			if matched && result != nil {
@@ -230,7 +244,7 @@ func (e *ClusterExecuter) ExecuteWithResults(input *contextargs.Context, callbac
 		}
 	})
 	if err != nil && e.options.HostErrorsCache != nil {
-		e.options.HostErrorsCache.MarkFailed(input.Input, err)
+		e.options.HostErrorsCache.MarkFailed(input.MetaInput.Input, err)
 	}
 	return err
 }

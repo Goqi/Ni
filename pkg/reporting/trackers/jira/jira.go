@@ -1,16 +1,17 @@
 package jira
 
 import (
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/reporting/format"
-	"Ernuclei/pkg/types"
 	"bytes"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/andygrunwald/go-jira"
+
+	"Ernuclei/pkg/catalog/config"
+	"Ernuclei/pkg/output"
+	"Ernuclei/pkg/reporting/format"
+	"Ernuclei/pkg/types"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/retryablehttp-go"
 )

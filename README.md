@@ -2,7 +2,7 @@
 
 本项目是nuclei的二开项目。[nuclei](https://github.com/projectdiscovery/nuclei)是projectdiscovery项目开发的一款简单的基于YAML的DSL的快速且可定制的漏洞扫描器。有各种类型的漏洞模板，漏洞规则极其丰富。但原程序某些功能不太满意，认为存在一些弊端，所以计划进行二开！未来的未来重点使用二开nuclei，尽量避免重复造轮子。作者：[0e0w](https://github.com/0e0w)
 
-本项目创建于2022年11月22日，最近的更新时间为2022年11月25日。
+本项目创建于2022年11月22日，最近的更新时间为2022年11月26日。
 
 - [01-项目结构修改](https://github.com/Goqi/Ernuclei#01-%E9%A1%B9%E7%9B%AE%E7%BB%93%E6%9E%84%E4%BF%AE%E6%94%B9)
 - [02-项目功能修改](https://github.com/Goqi/Ernuclei#02-%E9%A1%B9%E7%9B%AE%E5%8A%9F%E8%83%BD%E4%BF%AE%E6%94%B9)
@@ -12,6 +12,10 @@
 ## 01-项目功能修改
 
 - [x] 将config和nuclei-templates目录自动下载解压到程序本目录。
+
+  - [config.go](https://github.com/Goqi/Ernuclei/blob/main/pkg/catalog/config/config.go)
+  - [template_path.go](https://github.com/Goqi/Ernuclei/blob/main/pkg/utils/template_path.go)
+
 - [ ] 将nuclei-templates打包到程序中。
 - [ ] 优化结果保存。
 - [ ] 添加自动代理扫描模块。
@@ -27,7 +31,7 @@
 
 ## 03-项目结构修改
 
-本项目基于nuclei-v2.7.9。对项目结构进行了调整，调整后的项目结构如下：
+本项目基于nuclei-v2.8.3。对项目结构进行了调整，调整后的项目结构如下：
 
 ```
 │  main.go
@@ -41,6 +45,7 @@
     │  │  
     │  ├─config
     │  │      config.go
+    │  │      config.go.txt
     │  │      
     │  ├─disk
     │  │      catalog.go
@@ -68,8 +73,22 @@
     │      │  inputs.go
     │      │  
     │      └─hybrid
-    │              hmap.go
-    │              
+    │          │  hmap.go
+    │          │  options.go
+    │          │  
+    │          └─tests
+    │                  AS134029.txt
+    │                  AS14421.txt
+    │                  
+    ├─external
+    │  └─customtemplates
+    │          github.go
+    │          s3.go
+    │          templates_provider.go
+    │          
+    ├─input
+    │      input.go
+    │      
     ├─model
     │  │  model.go
     │  │  worflow_loader.go
@@ -142,6 +161,8 @@
     │  │  │      args.go
     │  │  │      contextargs.go
     │  │  │      doc.go
+    │  │  │      metainput.go
+    │  │  │      variables.go
     │  │  │      
     │  │  ├─executer
     │  │  │      executer.go
@@ -205,6 +226,12 @@
     │  │  ├─tostring
     │  │  │      tostring.go
     │  │  │      
+    │  │  ├─uncover
+    │  │  │      uncover.go
+    │  │  │      
+    │  │  ├─updatecheck
+    │  │  │      client.go
+    │  │  │      
     │  │  ├─utils
     │  │  │  ├─excludematchers
     │  │  │  │      excludematchers.go
@@ -254,11 +281,18 @@
     │  │  │  operators.go
     │  │  │  request.go
     │  │  │  request_annotations.go
+    │  │  │  request_condition.go
     │  │  │  request_generator.go
     │  │  │  signature.go
     │  │  │  utils.go
     │  │  │  validate.go
     │  │  │  
+    │  │  ├─fuzz
+    │  │  │      doc.go
+    │  │  │      execute.go
+    │  │  │      fuzz.go
+    │  │  │      parts.go
+    │  │  │      
     │  │  ├─httpclientpool
     │  │  │      clientpool.go
     │  │  │      
@@ -270,11 +304,14 @@
     │  │  │      raw.go
     │  │  │      
     │  │  ├─signer
-    │  │  │      aws.go
+    │  │  │      aws-sign.go
     │  │  │      signer.go
     │  │  │      
-    │  │  └─signerpool
-    │  │          signerpool.go
+    │  │  ├─signerpool
+    │  │  │      signerpool.go
+    │  │  │      
+    │  │  └─utils
+    │  │          variables.go
     │  │          
     │  ├─network
     │  │  │  network.go
@@ -302,8 +339,11 @@
     │  │      websocket.go
     │  │      
     │  └─whois
-    │          whois.go
-    │          
+    │      │  whois.go
+    │      │  
+    │      └─rdapclientpool
+    │              clientpool.go
+    │              
     ├─reporting
     │  │  reporting.go
     │  │  
@@ -339,6 +379,7 @@
     │  │  doc.go
     │  │  enumerate.go
     │  │  healthcheck.go
+    │  │  inputs.go
     │  │  options.go
     │  │  proxy.go
     │  │  runner.go
@@ -348,6 +389,7 @@
     │  └─nucleicloud
     │          cloud.go
     │          types.go
+    │          utils.go
     │          
     ├─templates
     │  │  cluster.go
@@ -383,13 +425,11 @@
     ├─utils
     │  │  insertion_ordered_map.go
     │  │  template_path.go
+    │  │  template_path.go.txt
     │  │  utils.go
     │  │  
     │  ├─monitor
     │  │      monitor.go
-    │  │      
-    │  ├─ratelimit
-    │  │      ratelimit.go
     │  │      
     │  ├─stats
     │  │      doc.go

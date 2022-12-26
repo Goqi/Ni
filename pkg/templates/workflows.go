@@ -3,10 +3,10 @@ package templates
 import (
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/model"
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/workflows"
-	"github.com/projectdiscovery/gologger"
 )
 
 // compileWorkflow compiles the workflow for execution
@@ -86,8 +86,9 @@ func parseWorkflowTemplate(workflow *workflows.WorkflowTemplate, preprocessor Pr
 	finalTemplates, _ := ClusterTemplates(workflowTemplates, options.Copy())
 	for _, template := range finalTemplates {
 		workflow.Executers = append(workflow.Executers, &workflows.ProtocolExecuterPair{
-			Executer: template.Executer,
-			Options:  options,
+			Executer:     template.Executer,
+			Options:      options,
+			TemplateType: template.Type(),
 		})
 	}
 

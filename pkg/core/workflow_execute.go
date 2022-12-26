@@ -1,27 +1,28 @@
 package core
 
 import (
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/workflows"
 	"fmt"
 	"net/http/cookiejar"
 
-	"github.com/projectdiscovery/gologger"
 	"github.com/remeh/sizedwaitgroup"
 	"go.uber.org/atomic"
+
+	"github.com/projectdiscovery/gologger"
+	"Ernuclei/pkg/output"
+	"Ernuclei/pkg/protocols/common/contextargs"
+	"Ernuclei/pkg/workflows"
 )
 
 const workflowStepExecutionError = "[%s] Could not execute workflow step: %s\n"
 
 // executeWorkflow runs a workflow on an input and returns true or false
-func (e *Engine) executeWorkflow(input string, w *workflows.Workflow) bool {
+func (e *Engine) executeWorkflow(input *contextargs.MetaInput, w *workflows.Workflow) bool {
 	results := &atomic.Bool{}
 
 	// at this point we should be at the start root execution of a workflow tree, hence we create global shared instances
 	workflowCookieJar, _ := cookiejar.New(nil)
 	ctxArgs := contextargs.New()
-	ctxArgs.Input = input
+	ctxArgs.MetaInput = input
 	ctxArgs.CookieJar = workflowCookieJar
 
 	swg := sizedwaitgroup.New(w.Options.Options.TemplateThreads)
@@ -87,7 +88,7 @@ func (e *Engine) runWorkflowStep(template *workflows.WorkflowTemplate, input *co
 			}
 			if err != nil {
 				if w.Options.HostErrorsCache != nil {
-					w.Options.HostErrorsCache.MarkFailed(input.Input, err)
+					w.Options.HostErrorsCache.MarkFailed(input.MetaInput.ID(), err)
 				}
 				if len(template.Executers) == 1 {
 					mainErr = err

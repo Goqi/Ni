@@ -1,13 +1,13 @@
 package filter
 
 import (
+	"errors"
+	"strings"
+
 	"Ernuclei/pkg/model/types/severity"
 	"Ernuclei/pkg/operators/common/dsl"
 	"Ernuclei/pkg/templates"
 	"Ernuclei/pkg/templates/types"
-	"errors"
-	"strings"
-
 	"github.com/Knetic/govaluate"
 	"github.com/projectdiscovery/gologger"
 )

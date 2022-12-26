@@ -1,9 +1,9 @@
 package core
 
 import (
-	"Ernuclei/pkg/templates/types"
-
 	"github.com/remeh/sizedwaitgroup"
+
+	"Ernuclei/pkg/templates/types"
 )
 
 // WorkPool implements an execution pool for executing different

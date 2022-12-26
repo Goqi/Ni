@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/projectdiscovery/gologger"
 	"Ernuclei/pkg/output"
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/protocols/common/contextargs"
@@ -15,9 +16,8 @@ import (
 	"Ernuclei/pkg/protocols/common/helpers/responsehighlighter"
 	"Ernuclei/pkg/protocols/common/interactsh"
 	"Ernuclei/pkg/protocols/common/utils/vardump"
-	httpProtocol "Ernuclei/pkg/protocols/http"
+	"Ernuclei/pkg/protocols/http/utils"
 	templateTypes "Ernuclei/pkg/templates/types"
-	"github.com/projectdiscovery/gologger"
 )
 
 var _ protocols.Request = &Request{}
@@ -30,13 +30,13 @@ func (request *Request) Type() templateTypes.ProtocolType {
 }
 
 // ExecuteWithResults executes the protocol requests and returns results instead of writing them.
-func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata, previous output.InternalEvent /*TODO review unused parameter*/, callback protocols.OutputEventCallback) error {
-	inputURL := input.Input
+func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata, previous output.InternalEvent, callback protocols.OutputEventCallback) error {
+	inputURL := input.MetaInput.Input
 	if request.options.Browser.UserAgent() == "" {
 		request.options.Browser.SetUserAgent(request.compiledUserAgent)
 	}
 
-	vars := GenerateVariables(inputURL)
+	vars := utils.GenerateVariablesWithContextArgs(input, false)
 	payloads := generators.BuildPayloadFromOptions(request.options.Options)
 	values := generators.MergeMaps(vars, metadata, payloads)
 	variablesMap := request.options.Variables.Evaluate(values)
@@ -72,7 +72,7 @@ func (request *Request) executeRequestWithPayloads(inputURL string, payloads map
 	}
 	defer instance.Close()
 
-	if request.options.Options.Debug || request.options.Options.DebugRequests {
+	if vardump.EnableVarDump {
 		gologger.Debug().Msgf("Protocol request variables: \n%s\n", vardump.DumpVariables(payloads))
 	}
 
@@ -150,14 +150,4 @@ func dumpResponse(event *output.InternalWrappedEvent, requestOptions *protocols.
 		highlightedResponse := responsehighlighter.Highlight(event.OperatorsResult, responseBody, cliOptions.NoColor, false)
 		gologger.Debug().Msgf("[%s] Dumped Headless response for %s\n\n%s", requestOptions.TemplateID, input, highlightedResponse)
 	}
-}
-
-// GenerateVariables will create default variables
-func GenerateVariables(URL string) map[string]interface{} {
-	parsed, err := url.Parse(URL)
-	if err != nil {
-		return nil
-	}
-
-	return httpProtocol.GenerateVariables(parsed, false)
 }

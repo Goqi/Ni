@@ -1,34 +1,6 @@
 package runner
 
 import (
-	"Ernuclei/pkg/catalog"
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/catalog/disk"
-	"Ernuclei/pkg/catalog/loader"
-	"Ernuclei/pkg/colorizer"
-	"Ernuclei/pkg/core"
-	"Ernuclei/pkg/core/inputs/hybrid"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/parsers"
-	"Ernuclei/pkg/progress"
-	"Ernuclei/pkg/projectfile"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/automaticscan"
-	"Ernuclei/pkg/protocols/common/hosterrorscache"
-	"Ernuclei/pkg/protocols/common/interactsh"
-	"Ernuclei/pkg/protocols/common/protocolinit"
-	"Ernuclei/pkg/protocols/common/utils/excludematchers"
-	"Ernuclei/pkg/protocols/headless/engine"
-	"Ernuclei/pkg/protocols/http/httpclientpool"
-	"Ernuclei/pkg/reporting"
-	"Ernuclei/pkg/reporting/exporters/markdown"
-	"Ernuclei/pkg/reporting/exporters/sarif"
-	"Ernuclei/pkg/templates"
-	"Ernuclei/pkg/types"
-	"Ernuclei/pkg/utils"
-	"Ernuclei/pkg/utils/ratelimit"
-	"Ernuclei/pkg/utils/stats"
-	yamlwrapper "Ernuclei/pkg/utils/yaml"
 	"bufio"
 	"bytes"
 	"context"
@@ -42,13 +14,48 @@ import (
 	"strings"
 	"time"
 
+	"Ernuclei/pkg/runner/nucleicloud"
+
 	"github.com/blang/semver"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
+	"github.com/projectdiscovery/ratelimit"
+	"go.uber.org/atomic"
+
+	"Ernuclei/pkg/catalog"
+	"Ernuclei/pkg/catalog/config"
+	"Ernuclei/pkg/catalog/disk"
+	"Ernuclei/pkg/catalog/loader"
+	"Ernuclei/pkg/colorizer"
+	"Ernuclei/pkg/core"
+	"Ernuclei/pkg/core/inputs/hybrid"
+	"Ernuclei/pkg/external/customtemplates"
+	"Ernuclei/pkg/input"
+	"Ernuclei/pkg/output"
+	"Ernuclei/pkg/parsers"
+	"Ernuclei/pkg/progress"
+	"Ernuclei/pkg/projectfile"
+	"Ernuclei/pkg/protocols"
+	"Ernuclei/pkg/protocols/common/automaticscan"
+	"Ernuclei/pkg/protocols/common/contextargs"
+	"Ernuclei/pkg/protocols/common/hosterrorscache"
+	"Ernuclei/pkg/protocols/common/interactsh"
+	"Ernuclei/pkg/protocols/common/protocolinit"
+	"Ernuclei/pkg/protocols/common/uncover"
+	"Ernuclei/pkg/protocols/common/utils/excludematchers"
+	"Ernuclei/pkg/protocols/headless/engine"
+	"Ernuclei/pkg/protocols/http/httpclientpool"
+	"Ernuclei/pkg/reporting"
+	"Ernuclei/pkg/reporting/exporters/markdown"
+	"Ernuclei/pkg/reporting/exporters/sarif"
+	"Ernuclei/pkg/templates"
+	"Ernuclei/pkg/types"
+	"Ernuclei/pkg/utils"
+	"Ernuclei/pkg/utils/stats"
+	yamlwrapper "Ernuclei/pkg/utils/yaml"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/retryablehttp-go"
-	"github.com/projectdiscovery/stringsutil"
-	"go.uber.org/atomic"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
 // Runner is a client for running the enumeration process.
@@ -68,6 +75,8 @@ type Runner struct {
 	hostErrors        hosterrorscache.CacheInterface
 	resumeCfg         *types.ResumeCfg
 	pprofServer       *http.Server
+	customTemplates   []customtemplates.Provider
+	cloudClient       *nucleicloud.Client
 }
 
 const pprofServerAddress = "127.0.0.1:8086"
@@ -83,6 +92,10 @@ func New(options *types.Options) (*Runner, error) {
 		os.Exit(0)
 	}
 
+	if options.Cloud {
+		runner.cloudClient = nucleicloud.New(options.CloudURL, options.CloudAPIKey)
+	}
+
 	if options.UpdateNuclei {
 		if err := updateNucleiVersionToLatest(runner.options.Verbose); err != nil {
 			return nil, err
@@ -95,6 +108,9 @@ func New(options *types.Options) (*Runner, error) {
 		options.NoUpdateTemplates = true
 	}
 	parsers.NoStrictSyntax = options.NoStrictSyntax
+
+	// parse the runner.options.GithubTemplateRepo and store the valid repos in runner.customTemplateRepos
+	runner.customTemplates = customtemplates.ParseCustomTemplates(runner.options)
 
 	if err := runner.updateTemplates(); err != nil {
 		gologger.Error().Msgf("Could not update templates: %s\n", err)
@@ -170,7 +186,7 @@ func New(options *types.Options) (*Runner, error) {
 	runner.hmapInputProvider = hmapInput
 
 	// Create the output file if asked
-	outputWriter, err := output.NewStandardWriter(!options.NoColor, options.NoMeta, options.NoTimestamp, options.JSON, options.JSONRequests, options.MatcherStatus, options.StoreResponse, options.Output, options.TraceLogFile, options.ErrorLogFile, options.StoreResponseDir)
+	outputWriter, err := output.NewStandardWriter(!options.NoColor, options.NoMeta, options.Timestamp, options.JSON, options.JSONRequests, options.MatcherStatus, options.StoreResponse, options.Output, options.TraceLogFile, options.ErrorLogFile, options.StoreResponseDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create output file")
 	}
@@ -241,9 +257,9 @@ func New(options *types.Options) (*Runner, error) {
 	}
 
 	if options.RateLimitMinute > 0 {
-		runner.ratelimiter = ratelimit.New(context.Background(), int64(options.RateLimitMinute), time.Minute)
+		runner.ratelimiter = ratelimit.New(context.Background(), uint(options.RateLimitMinute), time.Minute)
 	} else if options.RateLimit > 0 {
-		runner.ratelimiter = ratelimit.New(context.Background(), int64(options.RateLimit), time.Second)
+		runner.ratelimiter = ratelimit.New(context.Background(), uint(options.RateLimit), time.Second)
 	} else {
 		runner.ratelimiter = ratelimit.NewUnlimited(context.Background())
 	}
@@ -365,6 +381,7 @@ func (r *Runner) RunEnumeration() error {
 		Colorizer:       r.colorizer,
 		ResumeCfg:       r.resumeCfg,
 		ExcludeMatchers: excludematchers.New(r.options.ExcludeMatchers),
+		InputHelper:     input.NewHelper(),
 	}
 	engine := core.New(r.options)
 	engine.SetExecuterOptions(executerOpts)
@@ -397,20 +414,52 @@ func (r *Runner) RunEnumeration() error {
 	}
 	store.Load()
 
+	// add the hosts from the metadata queries of loaded templates into input provider
+	if r.options.Uncover && len(r.options.UncoverQuery) == 0 {
+		ret := uncover.GetUncoverTargetsFromMetadata(store.Templates(), r.options.UncoverDelay, r.options.UncoverLimit, r.options.UncoverField)
+		for host := range ret {
+			r.hmapInputProvider.Set(host)
+		}
+	}
 	// list all templates
-	if r.options.TemplateList {
+	if r.options.TemplateList || r.options.TemplateDisplay {
 		r.listAvailableStoreTemplates(store)
 		os.Exit(0)
 	}
 	r.displayExecutionInfo(store)
 
-	var results *atomic.Bool
+	// If not explicitly disabled, check if http based protocols
+	// are used and if inputs are non-http to pre-perform probing
+	// of urls and storing them for execution.
+	if !r.options.DisableHTTPProbe && loader.IsHTTPBasedProtocolUsed(store) && r.isInputNonHTTP() {
+		inputHelpers, err := r.initializeTemplatesHTTPInput()
+		if err != nil {
+			return errors.Wrap(err, "could not probe http input")
+		}
+		executerOpts.InputHelper.InputsHTTP = inputHelpers
+	}
 
+	enumeration := false
+	var results *atomic.Bool
 	if r.options.Cloud {
-		gologger.Info().Msgf("Running scan on cloud with URL %s", r.options.CloudURL)
-		results, err = r.runCloudEnumeration(store)
+		if r.options.ScanList {
+			err = r.getScanList()
+		} else if r.options.DeleteScan != "" {
+			err = r.deleteScan(r.options.DeleteScan)
+		} else if r.options.ScanOutput != "" {
+			err = r.getResults(r.options.ScanOutput)
+		} else {
+			gologger.Info().Msgf("Running scan on cloud with URL %s", r.options.CloudURL)
+			results, err = r.runCloudEnumeration(store, r.options.NoStore)
+			enumeration = true
+		}
 	} else {
 		results, err = r.runStandardEnumeration(executerOpts, store, engine)
+		enumeration = true
+	}
+
+	if !enumeration {
+		return err
 	}
 
 	if r.interactsh != nil {
@@ -421,6 +470,9 @@ func (r *Runner) RunEnumeration() error {
 	}
 	r.progress.Stop()
 
+	if executerOpts.InputHelper != nil {
+		_ = executerOpts.InputHelper.Close()
+	}
 	if r.issuesClient != nil {
 		r.issuesClient.Close()
 	}
@@ -432,6 +484,18 @@ func (r *Runner) RunEnumeration() error {
 		r.browser.Close()
 	}
 	return err
+}
+
+func (r *Runner) isInputNonHTTP() bool {
+	var nonURLInput bool
+	r.hmapInputProvider.Scan(func(value *contextargs.MetaInput) bool {
+		if !strings.Contains(value.Input, "://") {
+			nonURLInput = true
+			return false
+		}
+		return true
+	})
+	return nonURLInput
 }
 
 func (r *Runner) executeSmartWorkflowInput(executerOpts protocols.ExecuterOptions, store *loader.Store, engine *core.Engine) (*atomic.Bool, error) {
@@ -545,15 +609,18 @@ func (r *Runner) displayExecutionInfo(store *loader.Store) {
 		gologger.Info().Msgf("Using Nuclei Templates %s%s", r.templatesConfig.TemplateVersion, messageStr)
 	}
 	if len(store.Templates()) > 0 {
-		//gologger.Info().Msgf("Pocs added in last update: %d", r.countNewTemplates())
-		gologger.Info().Msgf("Pocs loaded for scan: %d", len(store.Templates()))
+		gologger.Info().Msgf("Templates added in last update: %d", r.countNewTemplates())
+		gologger.Info().Msgf("Templates loaded for scan: %d", len(store.Templates()))
 	}
 	if len(store.Workflows()) > 0 {
 		gologger.Info().Msgf("Workflows loaded for scan: %d", len(store.Workflows()))
 	}
+
+	gologger.Info().Msgf("Targets loaded for scan: %d", r.hmapInputProvider.Count())
 }
+
 func (r *Runner) readNewTemplatesWithVersionFile(version string) ([]string, error) {
-	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://raw.githubusercontent.com/Goqi/pocs/%s/.new-additions", version))
+	resp, err := http.DefaultClient.Get(fmt.Sprintf("https://raw.githubusercontent.com/projectdiscovery/nuclei-templates/%s/.new-additions", version))
 	if err != nil {
 		return nil, err
 	}

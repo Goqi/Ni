@@ -3,12 +3,12 @@ package variables
 import (
 	"strings"
 
+	"github.com/alecthomas/jsonschema"
 	"Ernuclei/pkg/protocols/common/expressions"
 	"Ernuclei/pkg/protocols/common/generators"
 	"Ernuclei/pkg/protocols/common/interactsh"
 	"Ernuclei/pkg/types"
 	"Ernuclei/pkg/utils"
-	"github.com/alecthomas/jsonschema"
 )
 
 // Variable is a key-value pair of strings that can be used
@@ -32,6 +32,7 @@ func (variables *Variable) UnmarshalYAML(unmarshal func(interface{}) error) erro
 		return err
 	}
 	evaluated := variables.Evaluate(map[string]interface{}{})
+
 	for k, v := range evaluated {
 		variables.Set(k, v)
 	}
@@ -42,7 +43,7 @@ func (variables *Variable) UnmarshalYAML(unmarshal func(interface{}) error) erro
 func (variables *Variable) Evaluate(values map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{}, variables.Len())
 	variables.ForEach(func(key string, value interface{}) {
-		result[key] = evaluateVariableValue(types.ToString(value), values, result)
+		result[key] = evaluateVariableValue(types.ToString(value), generators.MergeMaps(values, result), result)
 	})
 	return result
 }
@@ -57,7 +58,7 @@ func (variables *Variable) EvaluateWithInteractsh(values map[string]interface{},
 		if strings.Contains(valueString, "interactsh-url") {
 			valueString, interactURLs = interact.ReplaceMarkers(valueString, interactURLs)
 		}
-		result[key] = evaluateVariableValue(valueString, values, result)
+		result[key] = evaluateVariableValue(valueString, generators.MergeMaps(values, result), result)
 	})
 	return result, interactURLs
 }
@@ -65,10 +66,10 @@ func (variables *Variable) EvaluateWithInteractsh(values map[string]interface{},
 // evaluateVariableValue expression and returns final value
 func evaluateVariableValue(expression string, values, processing map[string]interface{}) string {
 	finalMap := generators.MergeMaps(values, processing)
-
 	result, err := expressions.Evaluate(expression, finalMap)
 	if err != nil {
 		return expression
 	}
+
 	return result
 }

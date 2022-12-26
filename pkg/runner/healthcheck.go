@@ -1,15 +1,15 @@
 package runner
 
 import (
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/types"
 	"fmt"
 	"net"
 	"path/filepath"
 	"runtime"
 	"strings"
 
-	"github.com/projectdiscovery/fileutil"
+	"Ernuclei/pkg/catalog/config"
+	"Ernuclei/pkg/types"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 // DoHealthCheck performs self-diagnostic checks

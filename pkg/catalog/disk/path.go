@@ -6,7 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"github.com/projectdiscovery/folderutil"
+
+	folderutil "github.com/projectdiscovery/utils/folder"
 )
 
 // ResolvePath resolves the path to an absolute one in various ways.

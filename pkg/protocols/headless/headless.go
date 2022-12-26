@@ -4,12 +4,12 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 
-	"github.com/projectdiscovery/fileutil"
 	useragent "Ernuclei/pkg/model/types/userAgent"
 	"Ernuclei/pkg/operators"
 	"Ernuclei/pkg/protocols"
 	"Ernuclei/pkg/protocols/common/generators"
 	"Ernuclei/pkg/protocols/headless/engine"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 // Request contains a Headless protocol request to be made from a template
@@ -95,7 +95,7 @@ func (request *Request) Compile(options *protocols.ExecuterOptions) error {
 
 	if len(request.Payloads) > 0 {
 		var err error
-		request.generator, err = generators.New(request.Payloads, request.AttackType.Value, options.TemplatePath, options.Catalog)
+		request.generator, err = generators.New(request.Payloads, request.AttackType.Value, options.TemplatePath, options.Options.TemplatesDirectory, options.Options.Sandbox, options.Catalog, options.Options.AttackType)
 		if err != nil {
 			return errors.Wrap(err, "could not parse payloads")
 		}

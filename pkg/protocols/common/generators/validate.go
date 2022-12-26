@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"Ernuclei/pkg/types"
-	"github.com/projectdiscovery/folderutil"
+	folderutil "github.com/projectdiscovery/utils/folder"
 )
 
 // validate validates the payloads if any.
