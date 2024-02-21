@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 )
 
 // EnableVarDump enables var dump for debugging optionally

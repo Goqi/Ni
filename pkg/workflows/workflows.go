@@ -3,10 +3,10 @@ package workflows
 import (
 	"fmt"
 
-	"Ernuclei/pkg/model/types/stringslice"
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/protocols"
-	templateTypes "Ernuclei/pkg/templates/types"
+	"Ni/pkg/model/types/stringslice"
+	"Ni/pkg/operators"
+	"Ni/pkg/protocols"
+	templateTypes "Ni/pkg/templates/types"
 )
 
 // Workflow is a workflow to execute with chained requests, etc.

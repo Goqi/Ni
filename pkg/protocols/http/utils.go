@@ -14,7 +14,7 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 
-	"Ernuclei/pkg/protocols/common/generators"
+	"Ni/pkg/protocols/common/generators"
 	"github.com/projectdiscovery/rawhttp"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )

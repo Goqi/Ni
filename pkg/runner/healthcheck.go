@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/catalog/config"
+	"Ni/pkg/types"
 	fileutil "github.com/projectdiscovery/utils/file"
 )
 

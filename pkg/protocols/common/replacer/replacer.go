@@ -5,8 +5,8 @@ import (
 
 	"github.com/projectdiscovery/fasttemplate"
 
-	"Ernuclei/pkg/protocols/common/marker"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/protocols/common/marker"
+	"Ni/pkg/types"
 )
 
 // Replace replaces placeholders in template with values on the fly.

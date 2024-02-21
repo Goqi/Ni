@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"Ni/pkg/protocols/common/generators"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/go-rod/rod/lib/utils"
 	"github.com/pkg/errors"
-	"Ernuclei/pkg/protocols/common/generators"
 	"github.com/segmentio/ksuid"
 )
 

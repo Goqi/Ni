@@ -8,7 +8,7 @@ Datetime:2022/11/22 7:14
 package main
 
 import (
-	"Ernuclei/cmd"
+	"Ni/cmd"
 	"fmt"
 	"time"
 )

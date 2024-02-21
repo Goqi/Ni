@@ -1,7 +1,7 @@
 package http
 
 import (
-	"Ernuclei/pkg/protocols/common/compare"
+	"Ni/pkg/protocols/common/compare"
 )
 
 // CanCluster returns true if the request can be clustered.

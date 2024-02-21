@@ -8,11 +8,11 @@ import (
 
 	"github.com/weppos/publicsuffix-go/publicsuffix"
 
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/expressions"
-	"Ernuclei/pkg/protocols/common/replacer"
-	"Ernuclei/pkg/protocols/dns/dnsclientpool"
+	"Ni/pkg/operators"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/expressions"
+	"Ni/pkg/protocols/common/replacer"
+	"Ni/pkg/protocols/dns/dnsclientpool"
 	"github.com/projectdiscovery/retryabledns"
 )
 

@@ -7,12 +7,12 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/executer"
-	"Ernuclei/pkg/protocols/offlinehttp"
-	"Ernuclei/pkg/templates/cache"
-	"Ernuclei/pkg/utils"
+	"Ni/pkg/operators"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/executer"
+	"Ni/pkg/protocols/offlinehttp"
+	"Ni/pkg/templates/cache"
+	"Ni/pkg/utils"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 

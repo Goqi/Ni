@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"Ernuclei/pkg/catalog/config"
+	"Ni/pkg/catalog/config"
 )
 
 // ReadCatalogChecksum reads catalog checksum from nuclei-templates repository

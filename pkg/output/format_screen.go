@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strconv"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 )
 
 // formatScreen formats the output for showing on screen.

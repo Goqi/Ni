@@ -1,7 +1,7 @@
 package filter
 
 import (
-	"Ernuclei/pkg/catalog"
+	"Ni/pkg/catalog"
 )
 
 // PathFilter is a path based template filter

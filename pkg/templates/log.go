@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"Ernuclei/pkg/model/types/severity"
+	"Ni/pkg/model/types/severity"
 	"github.com/logrusorgru/aurora"
 )
 

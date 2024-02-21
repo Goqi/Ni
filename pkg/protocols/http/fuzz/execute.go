@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/generators"
 	"github.com/pkg/errors"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/generators"
 	"github.com/projectdiscovery/retryablehttp-go"
 )
 

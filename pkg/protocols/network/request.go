@@ -13,19 +13,19 @@ import (
 
 	"github.com/pkg/errors"
 
+	"Ni/pkg/operators"
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/expressions"
+	"Ni/pkg/protocols/common/generators"
+	"Ni/pkg/protocols/common/helpers/eventcreator"
+	"Ni/pkg/protocols/common/helpers/responsehighlighter"
+	"Ni/pkg/protocols/common/interactsh"
+	"Ni/pkg/protocols/common/replacer"
+	"Ni/pkg/protocols/common/utils/vardump"
+	templateTypes "Ni/pkg/templates/types"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/common/expressions"
-	"Ernuclei/pkg/protocols/common/generators"
-	"Ernuclei/pkg/protocols/common/helpers/eventcreator"
-	"Ernuclei/pkg/protocols/common/helpers/responsehighlighter"
-	"Ernuclei/pkg/protocols/common/interactsh"
-	"Ernuclei/pkg/protocols/common/replacer"
-	"Ernuclei/pkg/protocols/common/utils/vardump"
-	templateTypes "Ernuclei/pkg/templates/types"
 )
 
 var _ protocols.Request = &Request{}

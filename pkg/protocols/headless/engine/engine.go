@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	ps "github.com/shirou/gopsutil/v3/process"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 	fileutil "github.com/projectdiscovery/utils/file"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )

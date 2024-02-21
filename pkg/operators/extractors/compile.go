@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
+	"Ni/pkg/operators/common/dsl"
 	"github.com/Knetic/govaluate"
 	"github.com/itchyny/gojq"
-	"Ernuclei/pkg/operators/common/dsl"
 )
 
 // CompileExtractors performs the initial setup operation on an extractor

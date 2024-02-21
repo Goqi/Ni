@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"Ni/pkg/model/types/severity"
 	"github.com/asaskevich/govalidator"
-	"Ernuclei/pkg/model/types/severity"
 )
 
 // JSONScalarToString converts an interface coming from json to string

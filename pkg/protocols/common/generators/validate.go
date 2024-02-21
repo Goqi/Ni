@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 	folderutil "github.com/projectdiscovery/utils/folder"
 )
 

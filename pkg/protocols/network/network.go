@@ -5,11 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/expressions"
-	"Ernuclei/pkg/protocols/common/generators"
-	"Ernuclei/pkg/protocols/network/networkclientpool"
+	"Ni/pkg/operators"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/expressions"
+	"Ni/pkg/protocols/common/generators"
+	"Ni/pkg/protocols/network/networkclientpool"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	fileutil "github.com/projectdiscovery/utils/file"
 )

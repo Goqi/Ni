@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"Ernuclei/pkg/catalog/config"
+	"Ni/pkg/catalog/config"
 	"github.com/rs/xid"
 )
 

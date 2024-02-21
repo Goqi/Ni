@@ -6,9 +6,9 @@ import (
 	"path"
 	"sync"
 
+	"Ni/pkg/catalog/config"
+	"Ni/pkg/output"
 	"github.com/pkg/errors"
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/output"
 	"github.com/projectdiscovery/sarif"
 )
 

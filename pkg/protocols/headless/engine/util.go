@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"Ernuclei/pkg/protocols/common/marker"
+	"Ni/pkg/protocols/common/marker"
 	"github.com/valyala/fasttemplate"
 )
 

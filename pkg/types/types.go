@@ -3,8 +3,8 @@ package types
 import (
 	"time"
 
-	"Ernuclei/pkg/model/types/severity"
-	"Ernuclei/pkg/templates/types"
+	"Ni/pkg/model/types/severity"
+	"Ni/pkg/templates/types"
 	"github.com/projectdiscovery/goflags"
 	fileutil "github.com/projectdiscovery/utils/file"
 )

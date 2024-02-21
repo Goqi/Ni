@@ -7,10 +7,10 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 	"go.uber.org/atomic"
 
+	"Ni/pkg/output"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/workflows"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/workflows"
 )
 
 const workflowStepExecutionError = "[%s] Could not execute workflow step: %s\n"

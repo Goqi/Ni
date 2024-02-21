@@ -6,9 +6,9 @@ import (
 	"path"
 	"strings"
 
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/common/generators"
-	"Ernuclei/pkg/protocols/dns"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/generators"
+	"Ni/pkg/protocols/dns"
 )
 
 // GenerateVariables will create default variables with context args

@@ -13,11 +13,11 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/protocols/common/protocolinit"
-	"Ernuclei/pkg/protocols/common/utils/vardump"
-	"Ernuclei/pkg/protocols/headless/engine"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/catalog/config"
+	"Ni/pkg/protocols/common/protocolinit"
+	"Ni/pkg/protocols/common/utils/vardump"
+	"Ni/pkg/protocols/headless/engine"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/formatter"

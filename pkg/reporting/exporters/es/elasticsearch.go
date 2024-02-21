@@ -13,8 +13,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols/common/protocolstate"
+	"Ni/pkg/output"
+	"Ni/pkg/protocols/common/protocolstate"
 	"github.com/projectdiscovery/retryablehttp-go"
 )
 

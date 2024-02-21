@@ -7,7 +7,7 @@ import (
 
 	"github.com/alecthomas/jsonschema"
 
-	"Ernuclei/pkg/utils"
+	"Ni/pkg/utils"
 )
 
 // StringSlice represents a single (in-lined) or multiple string value(s).

@@ -8,8 +8,8 @@ import (
 	"github.com/h2non/filetype"
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/protocols"
+	"Ni/pkg/operators"
+	"Ni/pkg/protocols"
 )
 
 var (

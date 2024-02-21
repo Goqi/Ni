@@ -1,10 +1,10 @@
 package eventcreator
 
 import (
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/utils/vardump"
+	"Ni/pkg/operators"
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/utils/vardump"
 	"github.com/projectdiscovery/gologger"
 )
 

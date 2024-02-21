@@ -8,10 +8,10 @@ import (
 
 	"github.com/andygrunwald/go-jira"
 
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/reporting/format"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/catalog/config"
+	"Ni/pkg/output"
+	"Ni/pkg/reporting/format"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/retryablehttp-go"
 )

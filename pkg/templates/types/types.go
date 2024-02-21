@@ -8,8 +8,8 @@ import (
 	"github.com/alecthomas/jsonschema"
 	"github.com/pkg/errors"
 
+	"Ni/pkg/model/types/stringslice"
 	"github.com/projectdiscovery/goflags"
-	"Ernuclei/pkg/model/types/stringslice"
 )
 
 // ProtocolType is the type of the request protocol specified

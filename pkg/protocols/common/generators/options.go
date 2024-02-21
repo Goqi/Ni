@@ -1,7 +1,7 @@
 package generators
 
 import (
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 )
 
 // BuildPayloadFromOptions returns a map with the payloads provided via CLI

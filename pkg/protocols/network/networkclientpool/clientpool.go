@@ -1,9 +1,9 @@
 package networkclientpool
 
 import (
+	"Ni/pkg/protocols/common/protocolstate"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
-	"Ernuclei/pkg/protocols/common/protocolstate"
-	"Ernuclei/pkg/types"
 )
 
 var (

@@ -5,7 +5,7 @@ import (
 
 	"github.com/logrusorgru/aurora"
 
-	"Ernuclei/pkg/model/types/severity"
+	"Ni/pkg/model/types/severity"
 )
 
 const (

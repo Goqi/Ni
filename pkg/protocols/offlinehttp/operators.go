@@ -5,15 +5,15 @@ import (
 	"strings"
 	"time"
 
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/operators/extractors"
-	"Ernuclei/pkg/operators/matchers"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/helpers/responsehighlighter"
-	"Ernuclei/pkg/protocols/utils"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/model"
+	"Ni/pkg/operators"
+	"Ni/pkg/operators/extractors"
+	"Ni/pkg/operators/matchers"
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/helpers/responsehighlighter"
+	"Ni/pkg/protocols/utils"
+	"Ni/pkg/types"
 )
 
 // Match matches a generic data response again a given matcher

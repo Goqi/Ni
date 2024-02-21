@@ -7,10 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/operators/extractors"
-	"Ernuclei/pkg/operators/matchers"
-	"Ernuclei/pkg/protocols/common/generators"
-	"Ernuclei/pkg/protocols/common/utils/excludematchers"
+	"Ni/pkg/operators/extractors"
+	"Ni/pkg/operators/matchers"
+	"Ni/pkg/protocols/common/generators"
+	"Ni/pkg/protocols/common/utils/excludematchers"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 

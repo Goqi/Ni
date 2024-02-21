@@ -5,8 +5,8 @@ import (
 
 	"github.com/xanzy/go-gitlab"
 
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/reporting/format"
+	"Ni/pkg/output"
+	"Ni/pkg/reporting/format"
 	"github.com/projectdiscovery/retryablehttp-go"
 )
 

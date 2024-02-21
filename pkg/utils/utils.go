@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"Ernuclei/pkg/catalog"
+	"Ni/pkg/catalog"
 )
 
 func IsBlank(value string) bool {

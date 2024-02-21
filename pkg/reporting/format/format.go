@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	"Ernuclei/pkg/catalog/config"
-	"Ernuclei/pkg/utils"
+	"Ni/pkg/catalog/config"
+	"Ni/pkg/utils"
 
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/model"
+	"Ni/pkg/output"
+	"Ni/pkg/types"
 )
 
 // Summary returns a formatted built one line summary of the event

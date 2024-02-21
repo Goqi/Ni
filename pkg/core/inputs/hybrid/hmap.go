@@ -12,10 +12,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/common/protocolstate"
-	"Ernuclei/pkg/protocols/common/uncover"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/protocolstate"
+	"Ni/pkg/protocols/common/uncover"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/filekv"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"

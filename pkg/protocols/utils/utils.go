@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 )
 
 // CleanStructFieldJSONTag cleans struct json tag field

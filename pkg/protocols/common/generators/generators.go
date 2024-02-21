@@ -5,7 +5,7 @@ package generators
 import (
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/catalog"
+	"Ni/pkg/catalog"
 )
 
 // PayloadGenerator is the generator struct for generating payloads

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/gologger"
 	fileutil "github.com/projectdiscovery/utils/file"
 )

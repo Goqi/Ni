@@ -6,11 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/operators/common/dsl"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/common/helpers/writer"
+	"Ni/pkg/operators/common/dsl"
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/helpers/writer"
 	"github.com/projectdiscovery/gologger"
 )
 

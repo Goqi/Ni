@@ -3,8 +3,8 @@ package offlinehttp
 import (
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/protocols"
+	"Ni/pkg/operators"
+	"Ni/pkg/protocols"
 )
 
 // Request is a offline http response processing request

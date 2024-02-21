@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	templateTypes "Ernuclei/pkg/templates/types"
+	templateTypes "Ni/pkg/templates/types"
 	"github.com/projectdiscovery/hmap/store/hybrid"
 )
 

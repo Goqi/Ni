@@ -4,11 +4,11 @@ import (
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 
-	useragent "Ernuclei/pkg/model/types/userAgent"
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/generators"
-	"Ernuclei/pkg/protocols/headless/engine"
+	useragent "Ni/pkg/model/types/userAgent"
+	"Ni/pkg/operators"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/generators"
+	"Ni/pkg/protocols/headless/engine"
 	fileutil "github.com/projectdiscovery/utils/file"
 )
 

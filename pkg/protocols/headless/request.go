@@ -7,17 +7,17 @@ import (
 
 	"github.com/pkg/errors"
 
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/generators"
+	"Ni/pkg/protocols/common/helpers/eventcreator"
+	"Ni/pkg/protocols/common/helpers/responsehighlighter"
+	"Ni/pkg/protocols/common/interactsh"
+	"Ni/pkg/protocols/common/utils/vardump"
+	"Ni/pkg/protocols/http/utils"
+	templateTypes "Ni/pkg/templates/types"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/common/generators"
-	"Ernuclei/pkg/protocols/common/helpers/eventcreator"
-	"Ernuclei/pkg/protocols/common/helpers/responsehighlighter"
-	"Ernuclei/pkg/protocols/common/interactsh"
-	"Ernuclei/pkg/protocols/common/utils/vardump"
-	"Ernuclei/pkg/protocols/http/utils"
-	templateTypes "Ernuclei/pkg/templates/types"
 )
 
 var _ protocols.Request = &Request{}

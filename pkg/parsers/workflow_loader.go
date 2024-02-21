@@ -1,9 +1,9 @@
 package parsers
 
 import (
-	"Ernuclei/pkg/catalog/loader/filter"
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/protocols"
+	"Ni/pkg/catalog/loader/filter"
+	"Ni/pkg/model"
+	"Ni/pkg/protocols"
 	"github.com/projectdiscovery/gologger"
 )
 

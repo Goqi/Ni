@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/remeh/sizedwaitgroup"
 
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/helpers/eventcreator"
+	"Ni/pkg/protocols/common/tostring"
+	templateTypes "Ni/pkg/templates/types"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/common/helpers/eventcreator"
-	"Ernuclei/pkg/protocols/common/tostring"
-	templateTypes "Ernuclei/pkg/templates/types"
 )
 
 var _ protocols.Request = &Request{}

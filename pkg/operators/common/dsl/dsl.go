@@ -35,9 +35,9 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/spaolacci/murmur3"
 
-	"Ernuclei/pkg/protocols/common/helpers/deserialization"
-	"Ernuclei/pkg/protocols/common/randomip"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/protocols/common/helpers/deserialization"
+	"Ni/pkg/protocols/common/randomip"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/gologger"
 )
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"Ernuclei/pkg/output"
+	"Ni/pkg/output"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/retryablehttp-go"

@@ -1,8 +1,8 @@
 package rdapclientpool
 
 import (
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/types"
 	"github.com/projectdiscovery/rdap"
 )
 

@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/networkpolicy"
 )

@@ -3,16 +3,16 @@
 package templates
 
 import (
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/model/types/severity"
-	"Ernuclei/pkg/model/types/stringslice"
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/operators/extractors"
-	"Ernuclei/pkg/operators/matchers"
-	"Ernuclei/pkg/protocols/dns"
-	"Ernuclei/pkg/protocols/file"
-	"Ernuclei/pkg/protocols/http"
-	"Ernuclei/pkg/protocols/network"
+	"Ni/pkg/model"
+	"Ni/pkg/model/types/severity"
+	"Ni/pkg/model/types/stringslice"
+	"Ni/pkg/operators"
+	"Ni/pkg/operators/extractors"
+	"Ni/pkg/operators/matchers"
+	"Ni/pkg/protocols/dns"
+	"Ni/pkg/protocols/file"
+	"Ni/pkg/protocols/http"
+	"Ni/pkg/protocols/network"
 )
 
 var (

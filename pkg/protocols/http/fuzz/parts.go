@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"strings"
 
+	"Ni/pkg/protocols/common/expressions"
+	"Ni/pkg/protocols/common/generators"
 	"github.com/corpix/uarand"
-	"Ernuclei/pkg/protocols/common/expressions"
-	"Ernuclei/pkg/protocols/common/generators"
 	"github.com/projectdiscovery/retryablehttp-go"
 )
 

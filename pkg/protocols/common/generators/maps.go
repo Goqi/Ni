@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"Ernuclei/pkg/protocols/common/marker"
+	"Ni/pkg/protocols/common/marker"
 )
 
 // MergeMapsMany merges many maps into a new map

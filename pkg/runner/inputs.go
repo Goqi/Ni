@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/http/httpclientpool"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/http/httpclientpool"
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"

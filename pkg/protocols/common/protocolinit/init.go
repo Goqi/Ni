@@ -3,13 +3,13 @@ package protocolinit
 import (
 	"github.com/corpix/uarand"
 
-	"Ernuclei/pkg/protocols/common/protocolstate"
-	"Ernuclei/pkg/protocols/dns/dnsclientpool"
-	"Ernuclei/pkg/protocols/http/httpclientpool"
-	"Ernuclei/pkg/protocols/http/signerpool"
-	"Ernuclei/pkg/protocols/network/networkclientpool"
-	"Ernuclei/pkg/protocols/whois/rdapclientpool"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/protocols/common/protocolstate"
+	"Ni/pkg/protocols/dns/dnsclientpool"
+	"Ni/pkg/protocols/http/httpclientpool"
+	"Ni/pkg/protocols/http/signerpool"
+	"Ni/pkg/protocols/network/networkclientpool"
+	"Ni/pkg/protocols/whois/rdapclientpool"
+	"Ni/pkg/types"
 )
 
 // Init initializes the client pools for the protocols

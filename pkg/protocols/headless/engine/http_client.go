@@ -11,9 +11,9 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"Ernuclei/pkg/protocols/common/protocolstate"
-	"Ernuclei/pkg/protocols/utils"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/protocols/common/protocolstate"
+	"Ni/pkg/protocols/utils"
+	"Ni/pkg/types"
 )
 
 // newHttpClient creates a new http client for headless communication with a timeout

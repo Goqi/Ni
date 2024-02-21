@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	"Ernuclei/pkg/protocols/http/signer"
+	"Ni/pkg/protocols/http/signer"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 )
 
 var (

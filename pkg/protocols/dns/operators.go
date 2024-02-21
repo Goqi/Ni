@@ -8,12 +8,12 @@ import (
 
 	"github.com/miekg/dns"
 
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/operators/extractors"
-	"Ernuclei/pkg/operators/matchers"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/model"
+	"Ni/pkg/operators/extractors"
+	"Ni/pkg/operators/matchers"
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/retryabledns"
 )
 

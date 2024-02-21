@@ -1,6 +1,6 @@
 package inputs
 
-import "Ernuclei/pkg/protocols/common/contextargs"
+import "Ni/pkg/protocols/common/contextargs"
 
 type SimpleInputProvider struct {
 	Inputs []*contextargs.MetaInput

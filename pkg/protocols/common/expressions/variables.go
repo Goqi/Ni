@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
+	"Ni/pkg/operators/common/dsl"
 	"github.com/Knetic/govaluate"
-	"Ernuclei/pkg/operators/common/dsl"
 )
 
 var (

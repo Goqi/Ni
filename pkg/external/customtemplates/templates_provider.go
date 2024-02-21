@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"Ernuclei/pkg/types"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/gologger"
 )
 

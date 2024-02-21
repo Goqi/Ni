@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"Ernuclei/pkg/model/types/stringslice"
+	"Ni/pkg/model/types/stringslice"
 	"github.com/projectdiscovery/goflags"
 )
 

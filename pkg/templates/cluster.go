@@ -5,15 +5,15 @@ import (
 	"sort"
 	"strings"
 
+	"Ni/pkg/model"
+	"Ni/pkg/operators"
+	"Ni/pkg/output"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/helpers/writer"
+	"Ni/pkg/protocols/http"
+	"Ni/pkg/templates/types"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/operators"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/protocols/common/helpers/writer"
-	"Ernuclei/pkg/protocols/http"
-	"Ernuclei/pkg/templates/types"
 	cryptoutil "github.com/projectdiscovery/utils/crypto"
 )
 

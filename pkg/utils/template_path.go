@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"Ernuclei/pkg/catalog/config"
+	"Ni/pkg/catalog/config"
 )
 
 const (

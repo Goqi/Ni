@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/generators"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/generators"
 )
 
 // Rule is a single rule which describes how to fuzz the request

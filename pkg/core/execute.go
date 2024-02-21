@@ -4,12 +4,12 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 	"go.uber.org/atomic"
 
+	"Ni/pkg/output"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/templates"
+	"Ni/pkg/templates/types"
+	generalTypes "Ni/pkg/types"
 	"github.com/projectdiscovery/gologger"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/templates"
-	"Ernuclei/pkg/templates/types"
-	generalTypes "Ernuclei/pkg/types"
 )
 
 // Execute takes a list of templates/workflows that have been compiled

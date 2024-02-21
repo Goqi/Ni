@@ -1,9 +1,9 @@
 package core
 
 import (
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/contextargs"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/types"
 )
 
 // Engine is an executer for running Nuclei Templates/Workflows.

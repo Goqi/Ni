@@ -3,7 +3,7 @@ package runner
 import (
 	"fmt"
 
-	"Ernuclei/pkg/catalog/config"
+	"Ni/pkg/catalog/config"
 	"github.com/projectdiscovery/gologger"
 )
 

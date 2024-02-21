@@ -13,8 +13,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/output"
+	"Ni/pkg/types"
 )
 
 // Storage is a duplicate detecting storage for nuclei scan events.

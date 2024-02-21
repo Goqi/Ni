@@ -1,8 +1,8 @@
 package http
 
 import (
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/generators"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/generators"
 )
 
 // requestGenerator generates requests sequentially based on various

@@ -1,9 +1,9 @@
 package writer
 
 import (
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/progress"
-	"Ernuclei/pkg/reporting"
+	"Ni/pkg/output"
+	"Ni/pkg/progress"
+	"Ni/pkg/reporting"
 	"github.com/projectdiscovery/gologger"
 )
 

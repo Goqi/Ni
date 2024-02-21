@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/reporting/format"
+	"Ni/pkg/output"
+	"Ni/pkg/reporting/format"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 

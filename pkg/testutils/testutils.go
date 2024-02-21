@@ -8,15 +8,15 @@ import (
 
 	"github.com/logrusorgru/aurora"
 
+	"Ni/pkg/catalog/disk"
+	"Ni/pkg/model"
+	"Ni/pkg/model/types/severity"
+	"Ni/pkg/output"
+	"Ni/pkg/progress"
+	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/protocolinit"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/gologger/levels"
-	"Ernuclei/pkg/catalog/disk"
-	"Ernuclei/pkg/model"
-	"Ernuclei/pkg/model/types/severity"
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/progress"
-	"Ernuclei/pkg/protocols"
-	"Ernuclei/pkg/protocols/common/protocolinit"
-	"Ernuclei/pkg/types"
 )
 
 // Init initializes the protocols and their configurations

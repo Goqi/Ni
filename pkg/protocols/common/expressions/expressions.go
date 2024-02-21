@@ -5,9 +5,9 @@ import (
 
 	"github.com/Knetic/govaluate"
 
-	"Ernuclei/pkg/operators/common/dsl"
-	"Ernuclei/pkg/protocols/common/marker"
-	"Ernuclei/pkg/protocols/common/replacer"
+	"Ni/pkg/operators/common/dsl"
+	"Ni/pkg/protocols/common/marker"
+	"Ni/pkg/protocols/common/replacer"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 

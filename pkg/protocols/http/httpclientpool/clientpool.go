@@ -16,9 +16,9 @@ import (
 	"golang.org/x/net/proxy"
 	"golang.org/x/net/publicsuffix"
 
-	"Ernuclei/pkg/protocols/common/protocolstate"
-	"Ernuclei/pkg/protocols/utils"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/protocols/common/protocolstate"
+	"Ni/pkg/protocols/utils"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/rawhttp"
 	"github.com/projectdiscovery/retryablehttp-go"

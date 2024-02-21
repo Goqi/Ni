@@ -1,8 +1,8 @@
 package model
 
 import (
-	"Ernuclei/pkg/model/types/severity"
-	"Ernuclei/pkg/model/types/stringslice"
+	"Ni/pkg/model/types/severity"
+	"Ni/pkg/model/types/stringslice"
 )
 
 // Info contains metadata information about a template

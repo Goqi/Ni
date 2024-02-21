@@ -1,4 +1,4 @@
-module Ernuclei
+module Ni
 
 go 1.19
 
@@ -72,7 +72,6 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/klauspost/compress v1.15.8
 	github.com/mholt/archiver v3.1.1+incompatible
-	github.com/mitchellh/go-homedir v1.1.0
 	github.com/projectdiscovery/fasttemplate v0.0.2
 	github.com/projectdiscovery/fileutil v0.0.1
 	github.com/projectdiscovery/goflags v0.1.5
@@ -83,7 +82,6 @@ require (
 	github.com/projectdiscovery/uncover v1.0.1
 	github.com/projectdiscovery/utils v0.0.3
 	github.com/projectdiscovery/wappalyzergo v0.0.62
-	github.com/stretchr/testify v1.8.1
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -111,7 +109,6 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20210728210723-48179f1d4dae // indirect
 	github.com/cockroachdb/redact v1.0.8 // indirect
 	github.com/cockroachdb/sentry-go v0.6.1-cockroachdb.2 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/badger v1.6.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
@@ -155,7 +152,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onsi/ginkgo v1.16.4 // indirect
 	github.com/onsi/gomega v1.16.0 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc // indirect
 	github.com/projectdiscovery/mapcidr v1.0.3
@@ -221,6 +217,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/karlseguin/expect v1.0.2-0.20190806010014-778a5f0c6003 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/nwaples/rardecode v1.1.2 // indirect
 	github.com/openrdap/rdap v0.9.1-0.20191017185644-af93e7ef17b7 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect

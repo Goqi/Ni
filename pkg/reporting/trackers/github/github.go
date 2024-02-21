@@ -12,9 +12,9 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/output"
-	"Ernuclei/pkg/reporting/format"
-	"Ernuclei/pkg/types"
+	"Ni/pkg/output"
+	"Ni/pkg/reporting/format"
+	"Ni/pkg/types"
 	"github.com/projectdiscovery/retryablehttp-go"
 )
 

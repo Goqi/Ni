@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/utils"
+	"Ni/pkg/utils"
 )
 
 type ContentType string

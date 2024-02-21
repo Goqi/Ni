@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strings"
 
-	"Ernuclei/pkg/model/types/severity"
-	"Ernuclei/pkg/operators/common/dsl"
-	"Ernuclei/pkg/templates"
-	"Ernuclei/pkg/templates/types"
+	"Ni/pkg/model/types/severity"
+	"Ni/pkg/operators/common/dsl"
+	"Ni/pkg/templates"
+	"Ni/pkg/templates/types"
 	"github.com/Knetic/govaluate"
 	"github.com/projectdiscovery/gologger"
 )

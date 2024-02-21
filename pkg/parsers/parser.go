@@ -7,12 +7,12 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"Ernuclei/pkg/catalog"
-	"Ernuclei/pkg/catalog/loader/filter"
-	"Ernuclei/pkg/templates"
-	"Ernuclei/pkg/templates/cache"
-	"Ernuclei/pkg/utils"
-	"Ernuclei/pkg/utils/stats"
+	"Ni/pkg/catalog"
+	"Ni/pkg/catalog/loader/filter"
+	"Ni/pkg/templates"
+	"Ni/pkg/templates/cache"
+	"Ni/pkg/utils"
+	"Ni/pkg/utils/stats"
 )
 
 const (

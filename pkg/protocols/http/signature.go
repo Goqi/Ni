@@ -6,7 +6,7 @@ import (
 	"github.com/alecthomas/jsonschema"
 	"github.com/pkg/errors"
 
-	"Ernuclei/pkg/protocols/http/signer"
+	"Ni/pkg/protocols/http/signer"
 )
 
 // SignatureType is the type of signature
