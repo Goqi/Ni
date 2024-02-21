@@ -13,15 +13,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/remeh/sizedwaitgroup"
 
+	"github.com/projectdiscovery/gologger"
 	"Ni/pkg/operators"
 	"Ni/pkg/operators/matchers"
 	"Ni/pkg/output"
 	"Ni/pkg/protocols"
 	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/generators"
 	"Ni/pkg/protocols/common/helpers/eventcreator"
 	"Ni/pkg/protocols/common/helpers/responsehighlighter"
 	templateTypes "Ni/pkg/templates/types"
-	"github.com/projectdiscovery/gologger"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
@@ -42,7 +43,7 @@ type FileMatch struct {
 	Raw       string
 }
 
-var emptyResultErr = errors.New("Empty result")
+var errEmptyResult = errors.New("Empty result")
 
 // ExecuteWithResults executes the protocol requests and returns results instead of writing them.
 func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata, previous output.InternalEvent, callback protocols.OutputEventCallback) error {
@@ -63,9 +64,9 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 						// every new file in the compressed multi-file archive counts 1
 						request.options.Progress.AddToTotal(1)
 						archiveFileName := filepath.Join(filePath, file.Name())
-						event, fileMatches, err := request.processReader(file.ReadCloser, archiveFileName, input.MetaInput.Input, file.Size(), previous)
+						event, fileMatches, err := request.processReader(file.ReadCloser, archiveFileName, input, file.Size(), previous)
 						if err != nil {
-							if errors.Is(err, emptyResultErr) {
+							if errors.Is(err, errEmptyResult) {
 								// no matches but one file elaborated
 								request.options.Progress.IncrementRequests()
 								return nil
@@ -116,9 +117,9 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 					_ = tmpFileOut.Sync()
 					// rewind the file
 					_, _ = tmpFileOut.Seek(0, 0)
-					event, fileMatches, err := request.processReader(tmpFileOut, filePath, input.MetaInput.Input, fileStat.Size(), previous)
+					event, fileMatches, err := request.processReader(tmpFileOut, filePath, input, fileStat.Size(), previous)
 					if err != nil {
-						if errors.Is(err, emptyResultErr) {
+						if errors.Is(err, errEmptyResult) {
 							// no matches but one file elaborated
 							request.options.Progress.IncrementRequests()
 							return
@@ -136,9 +137,9 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 			default:
 				// normal file - increments the counter by 1
 				request.options.Progress.AddToTotal(1)
-				event, fileMatches, err := request.processFile(filePath, input.MetaInput.Input, previous)
+				event, fileMatches, err := request.processFile(filePath, input, previous)
 				if err != nil {
-					if errors.Is(err, emptyResultErr) {
+					if errors.Is(err, errEmptyResult) {
 						// no matches but one file elaborated
 						request.options.Progress.IncrementRequests()
 						return
@@ -165,7 +166,7 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata,
 	return nil
 }
 
-func (request *Request) processFile(filePath, input string, previousInternalEvent output.InternalEvent) (*output.InternalWrappedEvent, []FileMatch, error) {
+func (request *Request) processFile(filePath string, input *contextargs.Context, previousInternalEvent output.InternalEvent) (*output.InternalWrappedEvent, []FileMatch, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, nil, errors.Errorf("Could not open file path %s: %s\n", filePath, err)
@@ -184,25 +185,38 @@ func (request *Request) processFile(filePath, input string, previousInternalEven
 	return request.processReader(file, filePath, input, stat.Size(), previousInternalEvent)
 }
 
-func (request *Request) processReader(reader io.Reader, filePath, input string, totalBytes int64, previousInternalEvent output.InternalEvent) (*output.InternalWrappedEvent, []FileMatch, error) {
+func (request *Request) processReader(reader io.Reader, filePath string, input *contextargs.Context, totalBytes int64, previousInternalEvent output.InternalEvent) (*output.InternalWrappedEvent, []FileMatch, error) {
 	fileReader := io.LimitReader(reader, request.maxSize)
 	fileMatches, opResult := request.findMatchesWithReader(fileReader, input, filePath, totalBytes, previousInternalEvent)
 	if opResult == nil && len(fileMatches) == 0 {
-		return nil, nil, emptyResultErr
+		return nil, nil, errEmptyResult
 	}
 
 	// build event structure to interface with internal logic
-	return request.buildEvent(input, filePath, fileMatches, opResult, previousInternalEvent), fileMatches, nil
+	return request.buildEvent(input.MetaInput.Input, filePath, fileMatches, opResult, previousInternalEvent), fileMatches, nil
 }
 
-func (request *Request) findMatchesWithReader(reader io.Reader, input, filePath string, totalBytes int64, previous output.InternalEvent) ([]FileMatch, *operators.Result) {
+func (request *Request) findMatchesWithReader(reader io.Reader, input *contextargs.Context, filePath string, totalBytes int64, previous output.InternalEvent) ([]FileMatch, *operators.Result) {
 	var bytesCount, linesCount, wordsCount int
 	isResponseDebug := request.options.Options.Debug || request.options.Options.DebugResponse
 	totalBytesString := units.BytesSize(float64(totalBytes))
 
+	// we are forced to check if the whole file needs to be elaborated
+	// - matchers-condition option set to AND
+	hasAndCondition := request.CompiledOperators.GetMatchersCondition() == matchers.ANDCondition
+	// - any matcher has AND condition
+	for _, matcher := range request.CompiledOperators.Matchers {
+		if hasAndCondition {
+			break
+		}
+		if matcher.GetCondition() == matchers.ANDCondition {
+			hasAndCondition = true
+		}
+	}
+
 	scanner := bufio.NewScanner(reader)
 	buffer := []byte{}
-	if request.CompiledOperators.GetMatchersCondition() == matchers.ANDCondition {
+	if hasAndCondition {
 		scanner.Buffer(buffer, int(defaultMaxReadSize))
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			defaultMaxReadSizeInt := int(defaultMaxReadSize)
@@ -229,9 +243,13 @@ func (request *Request) findMatchesWithReader(reader io.Reader, input, filePath 
 		processedBytes := units.BytesSize(float64(currentBytes))
 
 		gologger.Verbose().Msgf("[%s] Processing file %s chunk %s/%s", request.options.TemplateID, filePath, processedBytes, totalBytesString)
-		dslMap := request.responseToDSLMap(lineContent, input, filePath)
+		dslMap := request.responseToDSLMap(lineContent, input.MetaInput.Input, filePath)
 		for k, v := range previous {
 			dslMap[k] = v
+		}
+		// add template context variables to DSL map
+		if request.options.HasTemplateCtx(input.MetaInput) {
+			dslMap = generators.MergeMaps(dslMap, request.options.GetTemplateCtx(input.MetaInput).GetAll())
 		}
 		discardEvent := eventcreator.CreateEvent(request, dslMap, isResponseDebug)
 		newOpResult := discardEvent.OperatorsResult
@@ -323,7 +341,7 @@ func (request *Request) buildEvent(input, filePath string, fileMatches []FileMat
 	return event
 }
 
-func dumpResponse(event *output.InternalWrappedEvent, requestOptions *protocols.ExecuterOptions, filematches []FileMatch, filePath string) {
+func dumpResponse(event *output.InternalWrappedEvent, requestOptions *protocols.ExecutorOptions, filematches []FileMatch, filePath string) {
 	cliOptions := requestOptions.Options
 	if cliOptions.Debug || cliOptions.DebugResponse {
 		for _, fileMatch := range filematches {

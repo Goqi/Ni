@@ -1,6 +1,7 @@
 package output
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
@@ -8,22 +9,27 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/logrusorgru/aurora"
 
-	"Ni/pkg/colorizer"
+	"Ni/internal/colorizer"
+	"Ni/pkg/catalog/config"
 	"Ni/pkg/model"
 	"Ni/pkg/model/types/severity"
 	"Ni/pkg/operators"
+	protocolUtils "Ni/pkg/protocols/utils"
 	"Ni/pkg/types"
 	"Ni/pkg/utils"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/interactsh/pkg/server"
 	fileutil "github.com/projectdiscovery/utils/file"
+	osutils "github.com/projectdiscovery/utils/os"
 )
 
 // Writer is an interface which writes output to somewhere for nuclei events.
@@ -35,7 +41,7 @@ type Writer interface {
 	// Write writes the event to file and/or screen.
 	Write(*ResultEvent) error
 	// WriteFailure writes the optional failure event for template to file and/or screen.
-	WriteFailure(event InternalEvent) error
+	WriteFailure(*InternalWrappedEvent) error
 	// Request logs a request in the trace log
 	Request(templateID, url, requestType string, err error)
 	//  WriteStoreDebugData writes the request/response debug data to file
@@ -44,19 +50,22 @@ type Writer interface {
 
 // StandardWriter is a writer writing output to file and screen for results.
 type StandardWriter struct {
-	json             bool
-	jsonReqResp      bool
-	timestamp        bool
-	noMetadata       bool
-	matcherStatus    bool
-	mutex            *sync.Mutex
-	aurora           aurora.Aurora
-	outputFile       io.WriteCloser
-	traceFile        io.WriteCloser
-	errorFile        io.WriteCloser
-	severityColors   func(severity.Severity) string
-	storeResponse    bool
-	storeResponseDir string
+	json                  bool
+	jsonReqResp           bool
+	timestamp             bool
+	noMetadata            bool
+	matcherStatus         bool
+	mutex                 *sync.Mutex
+	aurora                aurora.Aurora
+	outputFile            io.WriteCloser
+	traceFile             io.WriteCloser
+	errorFile             io.WriteCloser
+	severityColors        func(severity.Severity) string
+	storeResponse         bool
+	storeResponseDir      string
+	omitTemplate          bool
+	DisableStdout         bool
+	AddNewLinesOutputFile bool // by default this is only done for stdout
 }
 
 var decolorizerRegex = regexp.MustCompile(`\x1B\[[0-9;]*[a-zA-Z]`)
@@ -66,10 +75,39 @@ type InternalEvent map[string]interface{}
 
 // InternalWrappedEvent is a wrapped event with operators result added to it.
 type InternalWrappedEvent struct {
+	// Mutex is internal field which is implicitly used
+	// to synchronize callback(event) and interactsh polling updates
+	// Refer protocols/http.Request.ExecuteWithResults for more details
+	sync.RWMutex
+
 	InternalEvent   InternalEvent
 	Results         []*ResultEvent
 	OperatorsResult *operators.Result
 	UsesInteractsh  bool
+	// Only applicable if interactsh is used
+	// This is used to avoid duplicate successful interactsh events
+	InteractshMatched atomic.Bool
+}
+
+func (iwe *InternalWrappedEvent) HasOperatorResult() bool {
+	iwe.RLock()
+	defer iwe.RUnlock()
+
+	return iwe.OperatorsResult != nil
+}
+
+func (iwe *InternalWrappedEvent) HasResults() bool {
+	iwe.RLock()
+	defer iwe.RUnlock()
+
+	return len(iwe.Results) > 0
+}
+
+func (iwe *InternalWrappedEvent) SetOperatorResult(operatorResult *operators.Result) {
+	iwe.Lock()
+	defer iwe.Unlock()
+
+	iwe.OperatorsResult = operatorResult
 }
 
 // ResultEvent is a wrapped result event for a single nuclei output.
@@ -82,7 +120,9 @@ type ResultEvent struct {
 	// TemplateID is the ID of the template for the result.
 	TemplateID string `json:"template-id"`
 	// TemplatePath is the path of template
-	TemplatePath string `json:"-"`
+	TemplatePath string `json:"template-path,omitempty"`
+	// TemplateEncoded is the base64 encoded template
+	TemplateEncoded string `json:"template-encoded,omitempty"`
 	// Info contains information block of the template for the result.
 	Info model.Info `json:"info,inline"`
 	// MatcherName is the name of the matcher matched if any.
@@ -93,6 +133,12 @@ type ResultEvent struct {
 	Type string `json:"type"`
 	// Host is the host input on which match was found.
 	Host string `json:"host,omitempty"`
+	// Port is port of the host input on which match was found (if applicable).
+	Port string `json:"port,omitempty"`
+	// Scheme is the scheme of the host input on which match was found (if applicable).
+	Scheme string `json:"scheme,omitempty"`
+	// URL is the Base URL of the host input on which match was found (if applicable).
+	URL string `json:"url,omitempty"`
 	// Path is the path input on which match was found.
 	Path string `json:"path,omitempty"`
 	// Matched contains the matched input in its transformed form.
@@ -117,59 +163,66 @@ type ResultEvent struct {
 	// MatcherStatus is the status of the match
 	MatcherStatus bool `json:"matcher-status"`
 	// Lines is the line count for the specified match
-	Lines []int `json:"matched-line"`
+	Lines []int `json:"matched-line,omitempty"`
 
 	FileToIndexPosition map[string]int `json:"-"`
+	Error               string         `json:"error,omitempty"`
 }
 
 // NewStandardWriter creates a new output writer based on user configurations
-func NewStandardWriter(colors, noMetadata, timestamp, json, jsonReqResp, MatcherStatus, storeResponse bool, file, traceFile string, errorFile string, storeResponseDir string) (*StandardWriter, error) {
-	auroraColorizer := aurora.NewAurora(colors)
+func NewStandardWriter(options *types.Options) (*StandardWriter, error) {
+	resumeBool := false
+	if options.Resume != "" {
+		resumeBool = true
+	}
+	auroraColorizer := aurora.NewAurora(!options.NoColor)
 
 	var outputFile io.WriteCloser
-	if file != "" {
-		output, err := newFileOutputWriter(file)
+	if options.Output != "" {
+		output, err := newFileOutputWriter(options.Output, resumeBool)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not create output file")
 		}
 		outputFile = output
 	}
 	var traceOutput io.WriteCloser
-	if traceFile != "" {
-		output, err := newFileOutputWriter(traceFile)
+	if options.TraceLogFile != "" {
+		output, err := newFileOutputWriter(options.TraceLogFile, resumeBool)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not create output file")
 		}
 		traceOutput = output
 	}
 	var errorOutput io.WriteCloser
-	if errorFile != "" {
-		output, err := newFileOutputWriter(errorFile)
+	if options.ErrorLogFile != "" {
+		output, err := newFileOutputWriter(options.ErrorLogFile, resumeBool)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not create error file")
 		}
 		errorOutput = output
 	}
 	// Try to create output folder if it doesn't exist
-	if storeResponse && !fileutil.FolderExists(storeResponseDir) {
-		if err := fileutil.CreateFolder(storeResponseDir); err != nil {
-			gologger.Fatal().Msgf("Could not create output directory '%s': %s\n", storeResponseDir, err)
+	if options.StoreResponse && !fileutil.FolderExists(options.StoreResponseDir) {
+		if err := fileutil.CreateFolder(options.StoreResponseDir); err != nil {
+			gologger.Fatal().Msgf("Could not create output directory '%s': %s\n", options.StoreResponseDir, err)
 		}
 	}
+
 	writer := &StandardWriter{
-		json:             json,
-		jsonReqResp:      jsonReqResp,
-		noMetadata:       noMetadata,
-		matcherStatus:    MatcherStatus,
-		timestamp:        timestamp,
+		json:             options.JSONL,
+		jsonReqResp:      !options.OmitRawRequests,
+		noMetadata:       options.NoMeta,
+		matcherStatus:    options.MatcherStatus,
+		timestamp:        options.Timestamp,
 		aurora:           auroraColorizer,
 		mutex:            &sync.Mutex{},
 		outputFile:       outputFile,
 		traceFile:        traceOutput,
 		errorFile:        errorOutput,
 		severityColors:   colorizer.New(auroraColorizer),
-		storeResponse:    storeResponse,
-		storeResponseDir: storeResponseDir,
+		storeResponse:    options.StoreResponse,
+		storeResponseDir: options.StoreResponseDir,
+		omitTemplate:     options.OmitTemplate,
 	}
 	return writer, nil
 }
@@ -178,8 +231,9 @@ func NewStandardWriter(colors, noMetadata, timestamp, json, jsonReqResp, Matcher
 func (w *StandardWriter) Write(event *ResultEvent) error {
 	// Enrich the result event with extra metadata on the template-path and url.
 	if event.TemplatePath != "" {
-		event.Template, event.TemplateURL = utils.TemplatePathURL(types.ToString(event.TemplatePath))
+		event.Template, event.TemplateURL = utils.TemplatePathURL(types.ToString(event.TemplatePath), types.ToString(event.TemplateID))
 	}
+
 	event.Timestamp = time.Now()
 
 	var data []byte
@@ -199,8 +253,10 @@ func (w *StandardWriter) Write(event *ResultEvent) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	_, _ = os.Stdout.Write(data)
-	_, _ = os.Stdout.Write([]byte("\n"))
+	if !w.DisableStdout {
+		_, _ = os.Stdout.Write(data)
+		_, _ = os.Stdout.Write([]byte("\n"))
+	}
 
 	if w.outputFile != nil {
 		if !w.json {
@@ -208,6 +264,9 @@ func (w *StandardWriter) Write(event *ResultEvent) error {
 		}
 		if _, writeErr := w.outputFile.Write(data); writeErr != nil {
 			return errors.Wrap(err, "could not write to output")
+		}
+		if w.AddNewLinesOutputFile && w.json {
+			_, _ = w.outputFile.Write([]byte("\n"))
 		}
 	}
 	return nil
@@ -270,15 +329,39 @@ func (w *StandardWriter) Close() {
 }
 
 // WriteFailure writes the failure event for template to file and/or screen.
-func (w *StandardWriter) WriteFailure(event InternalEvent) error {
+func (w *StandardWriter) WriteFailure(wrappedEvent *InternalWrappedEvent) error {
 	if !w.matcherStatus {
 		return nil
 	}
-	templatePath, templateURL := utils.TemplatePathURL(types.ToString(event["template-path"]))
+	if len(wrappedEvent.Results) > 0 {
+		errs := []error{}
+		for _, result := range wrappedEvent.Results {
+			result.MatcherStatus = false // just in case
+			if err := w.Write(result); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if len(errs) > 0 {
+			return multierr.Combine(errs...)
+		}
+		return nil
+	}
+	// if no results were found, manually create a failure event
+	event := wrappedEvent.InternalEvent
+
+	templatePath, templateURL := utils.TemplatePathURL(types.ToString(event["template-path"]), types.ToString(event["template-id"]))
 	var templateInfo model.Info
 	if event["template-info"] != nil {
 		templateInfo = event["template-info"].(model.Info)
 	}
+	fields := protocolUtils.GetJsonFieldsFromURL(types.ToString(event["host"]))
+	if types.ToString(event["ip"]) != "" {
+		fields.Ip = types.ToString(event["ip"])
+	}
+	if types.ToString(event["path"]) != "" {
+		fields.Path = types.ToString(event["path"])
+	}
+
 	data := &ResultEvent{
 		Template:      templatePath,
 		TemplateURL:   templateURL,
@@ -286,12 +369,33 @@ func (w *StandardWriter) WriteFailure(event InternalEvent) error {
 		TemplatePath:  types.ToString(event["template-path"]),
 		Info:          templateInfo,
 		Type:          types.ToString(event["type"]),
-		Host:          types.ToString(event["host"]),
+		Host:          fields.Host,
+		Path:          fields.Path,
+		Port:          fields.Port,
+		Scheme:        fields.Scheme,
+		URL:           fields.URL,
+		IP:            fields.Ip,
+		Request:       types.ToString(event["request"]),
+		Response:      types.ToString(event["response"]),
 		MatcherStatus: false,
 		Timestamp:     time.Now(),
+		//FIXME: this is workaround to encode the template when no results were found
+		TemplateEncoded: w.encodeTemplate(types.ToString(event["template-path"])),
+		Error:           types.ToString(event["error"]),
 	}
 	return w.Write(data)
 }
+
+var maxTemplateFileSizeForEncoding = 1024 * 1024
+
+func (w *StandardWriter) encodeTemplate(templatePath string) string {
+	data, err := os.ReadFile(templatePath)
+	if err == nil && !w.omitTemplate && len(data) <= maxTemplateFileSizeForEncoding && config.DefaultConfig.IsCustomTemplate(templatePath) {
+		return base64.StdEncoding.EncodeToString(data)
+	}
+	return ""
+}
+
 func sanitizeFileName(fileName string) string {
 	fileName = strings.ReplaceAll(fileName, "http:", "")
 	fileName = strings.ReplaceAll(fileName, "https:", "")
@@ -299,6 +403,9 @@ func sanitizeFileName(fileName string) string {
 	fileName = strings.ReplaceAll(fileName, "\\", "_")
 	fileName = strings.ReplaceAll(fileName, "-", "_")
 	fileName = strings.ReplaceAll(fileName, ".", "_")
+	if osutils.IsWindows() {
+		fileName = strings.ReplaceAll(fileName, ":", "_")
+	}
 	fileName = strings.TrimPrefix(fileName, "__")
 	return fileName
 }

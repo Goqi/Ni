@@ -3,14 +3,13 @@ package ssl
 import (
 	"fmt"
 	"net"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/fatih/structs"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 
+	"Ni/pkg/model"
 	"Ni/pkg/operators"
 	"Ni/pkg/operators/extractors"
 	"Ni/pkg/operators/matchers"
@@ -22,26 +21,32 @@ import (
 	"Ni/pkg/protocols/common/helpers/eventcreator"
 	"Ni/pkg/protocols/common/helpers/responsehighlighter"
 	"Ni/pkg/protocols/common/utils/vardump"
-	"Ni/pkg/protocols/dns"
 	"Ni/pkg/protocols/network/networkclientpool"
-	"Ni/pkg/protocols/utils"
+	protocolutils "Ni/pkg/protocols/utils"
 	templateTypes "Ni/pkg/templates/types"
 	"Ni/pkg/types"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx"
 	"github.com/projectdiscovery/tlsx/pkg/tlsx/clients"
+	"github.com/projectdiscovery/tlsx/pkg/tlsx/openssl"
+	errorutil "github.com/projectdiscovery/utils/errors"
+	stringsutil "github.com/projectdiscovery/utils/strings"
+	urlutil "github.com/projectdiscovery/utils/url"
 )
 
 // Request is a request for the SSL protocol
 type Request struct {
 	// Operators for the current request go here.
-	operators.Operators `yaml:",inline,omitempty"`
-	CompiledOperators   *operators.Operators `yaml:"-"`
+	operators.Operators `yaml:",inline,omitempty" json:",inline,omitempty"`
+	CompiledOperators   *operators.Operators `yaml:"-" json:"-"`
+
+	// ID is the optional id of the request
+	ID string `yaml:"id,omitempty" json:"id,omitempty" jsonschema:"title=id of the request,description=ID of the request"`
 
 	// description: |
 	//   Address contains address for the request
-	Address string `yaml:"address,omitempty" jsonschema:"title=address for the ssl request,description=Address contains address for the request"`
+	Address string `yaml:"address,omitempty" json:"address,omitempty" jsonschema:"title=address for the ssl request,description=Address contains address for the request"`
 	// description: |
 	//   Minimum tls version - auto if not specified.
 	// values:
@@ -50,7 +55,7 @@ type Request struct {
 	//   - "tls11"
 	//   - "tls12"
 	//   - "tls13"
-	MinVersion string `yaml:"min_version,omitempty" jsonschema:"title=Min. TLS version,description=Minimum tls version - automatic if not specified.,enum=sslv3,enum=tls10,enum=tls11,enum=tls12,enum=tls13"`
+	MinVersion string `yaml:"min_version,omitempty" json:"min_version,omitempty" jsonschema:"title=Min. TLS version,description=Minimum tls version - automatic if not specified.,enum=sslv3,enum=tls10,enum=tls11,enum=tls12,enum=tls13"`
 	// description: |
 	//   Max tls version - auto if not specified.
 	// values:
@@ -59,58 +64,107 @@ type Request struct {
 	//   - "tls11"
 	//   - "tls12"
 	//   - "tls13"
-	MaxVersion string `yaml:"max_version,omitempty" jsonschema:"title=Max. TLS version,description=Max tls version - automatic if not specified.,enum=sslv3,enum=tls10,enum=tls11,enum=tls12,enum=tls13"`
+	MaxVersion string `yaml:"max_version,omitempty" json:"max_version,omitempty" jsonschema:"title=Max. TLS version,description=Max tls version - automatic if not specified.,enum=sslv3,enum=tls10,enum=tls11,enum=tls12,enum=tls13"`
 	// description: |
 	//   Client Cipher Suites  - auto if not specified.
-	CiperSuites []string `yaml:"cipher_suites,omitempty"`
+	CipherSuites []string `yaml:"cipher_suites,omitempty" json:"cipher_suites,omitempty"`
 	// description: |
 	//   Tls Scan Mode - auto if not specified
 	// values:
 	//   - "ctls"
 	//   - "ztls"
 	//   - "auto"
-	ScanMode string `yaml:"scan_mode,omitempty" jsonschema:"title=Scan Mode,description=Scan Mode - auto if not specified.,enum=ctls,enum=ztls,enum=auto"`
+	//	 - "openssl" # reverts to "auto" is openssl is not installed
+	ScanMode string `yaml:"scan_mode,omitempty" json:"scan_mode,omitempty" jsonschema:"title=Scan Mode,description=Scan Mode - auto if not specified.,enum=ctls,enum=ztls,enum=auto"`
+	// description: |
+	//   TLS Versions Enum - false if not specified
+	//   Enumerates supported TLS versions
+	TLSVersionsEnum bool `yaml:"tls_version_enum,omitempty" json:"tls_version_enum,omitempty" jsonschema:"title=Enumerate Versions,description=Enumerate Version - false if not specified"`
+	// description: |
+	//   TLS Ciphers Enum - false if not specified
+	//   Enumerates supported TLS ciphers
+	TLSCiphersEnum bool `yaml:"tls_cipher_enum,omitempty" json:"tls_cipher_enum,omitempty" jsonschema:"title=Enumerate Ciphers,description=Enumerate Ciphers - false if not specified"`
+	// description: |
+	//  TLS Cipher types to enumerate
+	// values:
+	//   - "insecure" (default)
+	//   - "weak"
+	//   - "secure"
+	//   - "all"
+	TLSCipherTypes []string `yaml:"tls_cipher_types,omitempty" json:"tls_cipher_types,omitempty" jsonschema:"title=TLS Cipher Types,description=TLS Cipher Types to enumerate,enum=weak,enum=secure,enum=insecure,enum=all"`
 
 	// cache any variables that may be needed for operation.
 	dialer  *fastdialer.Dialer
 	tlsx    *tlsx.Service
-	options *protocols.ExecuterOptions
+	options *protocols.ExecutorOptions
+}
+
+// CanCluster returns true if the request can be clustered.
+func (request *Request) CanCluster(other *Request) bool {
+	if len(request.CipherSuites) > 0 || request.MinVersion != "" || request.MaxVersion != "" {
+		return false
+	}
+	if request.Address != other.Address || request.ScanMode != other.ScanMode {
+		return false
+	}
+	return true
 }
 
 // Compile compiles the request generators preparing any requests possible.
-func (request *Request) Compile(options *protocols.ExecuterOptions) error {
+func (request *Request) Compile(options *protocols.ExecutorOptions) error {
 	request.options = options
 
 	client, err := networkclientpool.Get(options.Options, &networkclientpool.Configuration{})
 	if err != nil {
-		return errors.Wrap(err, "could not get network client")
+		return errorutil.NewWithTag("ssl", "could not get network client").Wrap(err)
 	}
 	request.dialer = client
+	switch {
+	//validate scanmode
+	case request.ScanMode == "":
+		request.ScanMode = "auto"
+
+	case !stringsutil.EqualFoldAny(request.ScanMode, "auto", "openssl", "ztls", "ctls"):
+		return errorutil.NewWithTag(request.TemplateID, "template %v does not contain valid scan-mode", request.TemplateID)
+
+	case request.ScanMode == "openssl" && !openssl.IsAvailable():
+		// if openssl is not installed instead of failing "auto" scanmode is used
+		request.ScanMode = "auto"
+	}
+	if request.TLSCiphersEnum {
+		// cipher enumeration requires tls version enumeration first
+		request.TLSVersionsEnum = true
+	}
+	if request.TLSCiphersEnum && len(request.TLSCipherTypes) == 0 {
+		// by default only look for insecure ciphers
+		request.TLSCipherTypes = []string{"insecure"}
+	}
 
 	tlsxOptions := &clients.Options{
 		AllCiphers:        true,
-		ScanMode:          "auto",
+		ScanMode:          request.ScanMode,
 		Expired:           true,
 		SelfSigned:        true,
+		Revoked:           true,
 		MisMatched:        true,
 		MinVersion:        request.MinVersion,
 		MaxVersion:        request.MaxVersion,
-		Ciphers:           request.CiperSuites,
+		Ciphers:           request.CipherSuites,
 		WildcardCertCheck: true,
 		Retries:           request.options.Options.Retries,
 		Timeout:           request.options.Options.Timeout,
 		Fastdialer:        client,
-		//ClientHello:       true,
-		//ServerHello:       true,
+		ClientHello:       true,
+		ServerHello:       true,
+		DisplayDns:        true,
+		TlsVersionsEnum:   request.TLSVersionsEnum,
+		TlsCiphersEnum:    request.TLSCiphersEnum,
+		TLsCipherLevel:    request.TLSCipherTypes,
 	}
-	if options.Options.ZTLS {
-		tlsxOptions.ScanMode = "ztls"
-	} else if request.ScanMode != "" {
-		tlsxOptions.ScanMode = request.ScanMode
-	}
+
 	tlsxService, err := tlsx.New(tlsxOptions)
 	if err != nil {
-		return errors.Wrap(err, "could not create tlsx service")
+		return errorutil.NewWithTag(request.TemplateID, "could not create tlsx service")
 	}
 	request.tlsx = tlsxService
 
@@ -119,11 +173,16 @@ func (request *Request) Compile(options *protocols.ExecuterOptions) error {
 		compiled.ExcludeMatchers = options.ExcludeMatchers
 		compiled.TemplateID = options.TemplateID
 		if err := compiled.Compile(); err != nil {
-			return errors.Wrap(err, "could not compile operators")
+			return errorutil.NewWithTag(request.TemplateID, "could not compile operators got %v", err)
 		}
 		request.CompiledOperators = compiled
 	}
 	return nil
+}
+
+// Options returns executer options for http request
+func (r *Request) Options() *protocols.ExecutorOptions {
+	return r.options
 }
 
 // Requests returns the total number of requests the rule will perform
@@ -140,26 +199,32 @@ func (request *Request) GetID() string {
 func (request *Request) ExecuteWithResults(input *contextargs.Context, dynamicValues, previous output.InternalEvent, callback protocols.OutputEventCallback) error {
 	hostPort, err := getAddress(input.MetaInput.Input)
 	if err != nil {
-		return nil
+		return err
 	}
 	hostname, port, _ := net.SplitHostPort(hostPort)
 
 	requestOptions := request.options
-	payloadValues := make(map[string]interface{})
+	payloadValues := generators.BuildPayloadFromOptions(request.options.Options)
 	for k, v := range dynamicValues {
 		payloadValues[k] = v
 	}
+
 	payloadValues["Hostname"] = hostPort
 	payloadValues["Host"] = hostname
 	payloadValues["Port"] = port
 
-	hostnameVariables := dns.GenerateVariables(hostname)
+	hostnameVariables := protocolutils.GenerateDNSVariables(hostname)
+	// add template context variables to varMap
 	values := generators.MergeMaps(payloadValues, hostnameVariables)
+	if request.options.HasTemplateCtx(input.MetaInput) {
+		values = generators.MergeMaps(values, request.options.GetTemplateCtx(input.MetaInput).GetAll())
+	}
+
 	variablesMap := request.options.Variables.Evaluate(values)
-	payloadValues = generators.MergeMaps(variablesMap, payloadValues)
+	payloadValues = generators.MergeMaps(variablesMap, payloadValues, request.options.Constants)
 
 	if vardump.EnableVarDump {
-		gologger.Debug().Msgf("Protocol request variables: \n%s\n", vardump.DumpVariables(payloadValues))
+		gologger.Debug().Msgf("SSL Protocol request variables: \n%s\n", vardump.DumpVariables(payloadValues))
 	}
 
 	finalAddress, dataErr := expressions.EvaluateByte([]byte(request.Address), payloadValues)
@@ -171,7 +236,7 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, dynamicVa
 	addressToDial := string(finalAddress)
 	host, port, err := net.SplitHostPort(addressToDial)
 	if err != nil {
-		return errors.Wrap(err, "could not split input host port")
+		return errorutil.NewWithErr(err).Msgf("could not split input host port")
 	}
 
 	var hostIp string
@@ -185,11 +250,11 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, dynamicVa
 	if err != nil {
 		requestOptions.Output.Request(requestOptions.TemplateID, input.MetaInput.Input, request.Type().String(), err)
 		requestOptions.Progress.IncrementFailedRequestsBy(1)
-		return errors.Wrap(err, "could not connect to server")
+		return errorutil.NewWithTag(request.TemplateID, "could not connect to server").Wrap(err)
 	}
 
 	requestOptions.Output.Request(requestOptions.TemplateID, hostPort, request.Type().String(), err)
-	gologger.Verbose().Msgf("Sent SSL request to %s", hostPort)
+	gologger.Verbose().Msgf("[%s] Sent SSL request to %s", request.options.TemplateID, hostPort)
 
 	if requestOptions.Options.Debug || requestOptions.Options.DebugRequests || requestOptions.Options.StoreResponse {
 		msg := fmt.Sprintf("[%s] Dumped SSL request for %s", requestOptions.TemplateID, input.MetaInput.Input)
@@ -205,10 +270,12 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, dynamicVa
 	jsonDataString := string(jsonData)
 
 	data := make(map[string]interface{})
-
+	for k, v := range payloadValues {
+		data[k] = v
+	}
 	data["type"] = request.Type().String()
 	data["response"] = jsonDataString
-	data["host"] = input
+	data["host"] = input.MetaInput.Input
 	data["matched"] = addressToDial
 	if input.MetaInput.CustomIP != "" {
 		data["ip"] = hostIp
@@ -218,28 +285,50 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, dynamicVa
 	data["template-path"] = requestOptions.TemplatePath
 	data["template-id"] = requestOptions.TemplateID
 	data["template-info"] = requestOptions.TemplateInfo
-	for k, v := range payloadValues {
-		data[k] = v
+
+	// if response is not struct compatible, error out
+	if !structs.IsStruct(response) {
+		return errorutil.NewWithTag("ssl", "response cannot be parsed into a struct: %v", response)
 	}
 
 	// Convert response to key value pairs and first cert chain item as well
 	responseParsed := structs.New(response)
 	for _, f := range responseParsed.Fields() {
-		tag := utils.CleanStructFieldJSONTag(f.Tag("json"))
+		if !f.IsExported() {
+			// if field is not exported f.IsZero() , f.Value() will panic
+			continue
+		}
+		tag := protocolutils.CleanStructFieldJSONTag(f.Tag("json"))
 		if tag == "" || f.IsZero() {
 			continue
 		}
-		data[tag] = f.Value()
-	}
-	responseParsed = structs.New(response.CertificateResponse)
-	for _, f := range responseParsed.Fields() {
-		tag := utils.CleanStructFieldJSONTag(f.Tag("json"))
-		if tag == "" || f.IsZero() {
-			continue
-		}
+		request.options.AddTemplateVar(input.MetaInput, request.Type(), request.ID, tag, f.Value())
 		data[tag] = f.Value()
 	}
 
+	// if certificate response is not struct compatible, error out
+	if !structs.IsStruct(response.CertificateResponse) {
+		return errorutil.NewWithTag("ssl", "certificate response cannot be parsed into a struct: %v", response.CertificateResponse)
+	}
+
+	responseParsed = structs.New(response.CertificateResponse)
+	for _, f := range responseParsed.Fields() {
+		if !f.IsExported() {
+			// if field is not exported f.IsZero() , f.Value() will panic
+			continue
+		}
+		tag := protocolutils.CleanStructFieldJSONTag(f.Tag("json"))
+		if tag == "" || f.IsZero() {
+			continue
+		}
+		request.options.AddTemplateVar(input.MetaInput, request.Type(), request.ID, tag, f.Value())
+		data[tag] = f.Value()
+	}
+
+	// add response fields ^ to template context and merge templatectx variables to output event
+	if request.options.HasTemplateCtx(input.MetaInput) {
+		data = generators.MergeMaps(data, request.options.GetTemplateCtx(input.MetaInput).GetAll())
+	}
 	event := eventcreator.CreateEvent(request, data, requestOptions.Options.Debug || requestOptions.Options.DebugResponse)
 	if requestOptions.Options.Debug || requestOptions.Options.DebugResponse || requestOptions.Options.StoreResponse {
 		msg := fmt.Sprintf("[%s] Dumped SSL response for %s", requestOptions.TemplateID, input.MetaInput.Input)
@@ -268,21 +357,15 @@ var RequestPartDefinitions = map[string]string{
 
 // getAddress returns the address of the host to make request to
 func getAddress(toTest string) (string, error) {
-	if strings.Contains(toTest, "://") {
-		parsed, err := url.Parse(toTest)
-		if err != nil {
-			return "", err
-		}
-		_, port, _ := net.SplitHostPort(parsed.Host)
-
-		if strings.ToLower(parsed.Scheme) == "https" && port == "" {
-			toTest = net.JoinHostPort(parsed.Host, "443")
-		} else {
-			toTest = parsed.Host
-		}
+	urlx, err := urlutil.Parse(toTest)
+	if err != nil {
+		// use given input instead of url parsing failure
 		return toTest, nil
 	}
-	return toTest, nil
+	if urlx.Port() == "" {
+		urlx.UpdatePort("443")
+	}
+	return urlx.Host, nil
 }
 
 // Match performs matching operation for a matcher on model and returns:
@@ -313,18 +396,30 @@ func (request *Request) Type() templateTypes.ProtocolType {
 }
 
 func (request *Request) MakeResultEventItem(wrapped *output.InternalWrappedEvent) *output.ResultEvent {
+	fields := protocolutils.GetJsonFieldsFromURL(types.ToString(wrapped.InternalEvent["host"]))
+	if types.ToString(wrapped.InternalEvent["ip"]) != "" {
+		fields.Ip = types.ToString(wrapped.InternalEvent["ip"])
+	}
+	// in case scheme is not specified , we only connect to port 443 unless custom https port was specified
+	// like 8443 etc
+	if fields.Port == "80" {
+		fields.Port = "443"
+	}
 	data := &output.ResultEvent{
-		TemplateID:       types.ToString(request.options.TemplateID),
-		TemplatePath:     types.ToString(request.options.TemplatePath),
-		Info:             request.options.TemplateInfo,
+		TemplateID:       types.ToString(wrapped.InternalEvent["template-id"]),
+		TemplatePath:     types.ToString(wrapped.InternalEvent["template-path"]),
+		Info:             wrapped.InternalEvent["template-info"].(model.Info),
 		Type:             types.ToString(wrapped.InternalEvent["type"]),
-		Host:             types.ToString(wrapped.InternalEvent["host"]),
-		Matched:          types.ToString(wrapped.InternalEvent["host"]),
+		Host:             fields.Host,
+		Port:             fields.Port,
+		Matched:          types.ToString(wrapped.InternalEvent["matched"]),
 		Metadata:         wrapped.OperatorsResult.PayloadValues,
 		ExtractedResults: wrapped.OperatorsResult.OutputExtracts,
 		Timestamp:        time.Now(),
 		MatcherStatus:    true,
-		IP:               types.ToString(wrapped.InternalEvent["ip"]),
+		IP:               fields.Ip,
+		TemplateEncoded:  request.options.EncodeTemplate(),
+		Error:            types.ToString(wrapped.InternalEvent["error"]),
 	}
 	return data
 }

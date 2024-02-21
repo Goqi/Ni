@@ -8,14 +8,14 @@ Datetime:2022/11/22 7:14
 package main
 
 import (
-	"Ni/cmd"
+	"Ni/cmd/nuclei"
 	"fmt"
 	"time"
 )
 
 func main() {
 	StartTime := time.Now()
-	cmd.Nuclei()
+	nuclei.Nuclei()
 	EndTime := time.Now()
 	Time := EndTime.Sub(StartTime)
 	fmt.Printf("程序运行完成！运行时间:%s\n", Time)

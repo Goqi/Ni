@@ -1,15 +1,19 @@
 package protocolstate
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
 
 	"Ni/pkg/types"
+	"Ni/pkg/utils/expand"
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/networkpolicy"
 )
 
@@ -21,7 +25,35 @@ func Init(options *types.Options) error {
 	if Dialer != nil {
 		return nil
 	}
+	lfaAllowed = options.AllowLocalFileAccess
 	opts := fastdialer.DefaultOptions
+	if options.DialerTimeout > 0 {
+		opts.DialerTimeout = options.DialerTimeout
+	}
+	if options.DialerKeepAlive > 0 {
+		opts.DialerKeepAlive = options.DialerKeepAlive
+	}
+
+	var expandedDenyList []string
+	for _, excludeTarget := range options.ExcludeTargets {
+		switch {
+		case asn.IsASN(excludeTarget):
+			expandedDenyList = append(expandedDenyList, expand.ASN(excludeTarget)...)
+		default:
+			expandedDenyList = append(expandedDenyList, excludeTarget)
+		}
+	}
+
+	if options.RestrictLocalNetworkAccess {
+		expandedDenyList = append(expandedDenyList, networkpolicy.DefaultIPv4DenylistRanges...)
+		expandedDenyList = append(expandedDenyList, networkpolicy.DefaultIPv6DenylistRanges...)
+	}
+	npOptions := &networkpolicy.Options{
+		DenyList: expandedDenyList,
+	}
+	opts.WithNetworkPolicyOptions = npOptions
+	NetworkPolicy, _ = networkpolicy.New(*npOptions)
+	InitHeadless(options.AllowLocalFileAccess, NetworkPolicy)
 
 	switch {
 	case options.SourceIP != "" && options.Interface != "":
@@ -91,29 +123,36 @@ func Init(options *types.Options) error {
 	if options.ResolversFile != "" {
 		opts.BaseResolvers = options.InternalResolversList
 	}
-	if options.Sandbox {
-		opts.Deny = append(networkpolicy.DefaultIPv4DenylistRanges, networkpolicy.DefaultIPv6DenylistRanges...)
-	}
+
+	opts.Deny = append(opts.Deny, expandedDenyList...)
+
 	opts.WithDialerHistory = true
-	opts.WithZTLS = options.ZTLS
 	opts.SNIName = options.SNI
+
+	// fastdialer now by default fallbacks to ztls when there are tls related errors
 	dialer, err := fastdialer.NewDialer(opts)
 	if err != nil {
 		return errors.Wrap(err, "could not create dialer")
 	}
 	Dialer = dialer
+
+	// override dialer in mysql
+	mysql.RegisterDialContext("tcp", func(ctx context.Context, addr string) (net.Conn, error) {
+		return Dialer.Dial(ctx, "tcp", addr)
+	})
+
 	return nil
 }
 
 // isIpAssociatedWithInterface checks if the given IP is associated with the given interface.
-func isIpAssociatedWithInterface(souceIP, interfaceName string) (bool, error) {
+func isIpAssociatedWithInterface(sourceIP, interfaceName string) (bool, error) {
 	addrs, err := interfaceAddresses(interfaceName)
 	if err != nil {
 		return false, err
 	}
 	for _, addr := range addrs {
 		if ipnet, ok := addr.(*net.IPNet); ok {
-			if ipnet.IP.String() == souceIP {
+			if ipnet.IP.String() == sourceIP {
 				return true, nil
 			}
 		}

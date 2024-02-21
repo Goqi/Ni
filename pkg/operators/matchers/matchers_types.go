@@ -25,6 +25,8 @@ const (
 	SizeMatcher
 	// name:dsl
 	DSLMatcher
+	// name:xpath
+	XPathMatcher
 	limit
 )
 
@@ -36,6 +38,7 @@ var MatcherTypes = map[MatcherType]string{
 	RegexMatcher:  "regex",
 	BinaryMatcher: "binary",
 	DSLMatcher:    "dsl",
+	XPathMatcher:  "xpath",
 }
 
 // GetType returns the type of the matcher
@@ -98,6 +101,20 @@ func (holder *MatcherTypeHolder) UnmarshalYAML(unmarshal func(interface{}) error
 	}
 
 	computedType, err := toMatcherTypes(marshalledTypes)
+	if err != nil {
+		return err
+	}
+
+	holder.MatcherType = computedType
+	return nil
+}
+
+func (holder *MatcherTypeHolder) UnmarshalJSON(data []byte) error {
+	s := strings.Trim(string(data), `"`)
+	if s == "" {
+		return nil
+	}
+	computedType, err := toMatcherTypes(s)
 	if err != nil {
 		return err
 	}

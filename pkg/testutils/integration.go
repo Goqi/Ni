@@ -16,6 +16,15 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// ExtraArgs
+var (
+	ExtraDebugArgs = []string{}
+	ExtraEnvVars   = []string{
+		"DISABLE_CLOUD_UPLOAD_WRN=true",
+		"DISABLE_CLOUD_UPLOAD=true",
+	}
+)
+
 // RunNucleiTemplateAndGetResults returns a list of results for a template
 func RunNucleiTemplateAndGetResults(template, url string, debug bool, extra ...string) ([]string, error) {
 	return RunNucleiAndGetResults(true, template, url, debug, extra...)
@@ -34,7 +43,7 @@ func RunNucleiAndGetResults(isTemplate bool, template, url string, debug bool, e
 		templateOrWorkflowFlag = "-w"
 	}
 
-	return RunNucleiBareArgsAndGetResults(debug, append([]string{
+	return RunNucleiBareArgsAndGetResults(debug, nil, append([]string{
 		templateOrWorkflowFlag,
 		template,
 		"-target",
@@ -42,10 +51,18 @@ func RunNucleiAndGetResults(isTemplate bool, template, url string, debug bool, e
 	}, extra...)...)
 }
 
-func RunNucleiBareArgsAndGetResults(debug bool, extra ...string) ([]string, error) {
+func RunNucleiBareArgsAndGetResults(debug bool, env []string, extra ...string) ([]string, error) {
 	cmd := exec.Command("./nuclei")
+	extra = append(extra, ExtraDebugArgs...)
 	cmd.Args = append(cmd.Args, extra...)
 	cmd.Args = append(cmd.Args, "-duc") // disable auto updates
+	cmd.Args = append(cmd.Args, "-interactions-poll-duration", "1")
+	cmd.Args = append(cmd.Args, "-interactions-cooldown-period", "10")
+	cmd.Args = append(cmd.Args, "-allow-local-file-access")
+	if env != nil {
+		cmd.Env = append(os.Environ(), env...)
+	}
+	cmd.Env = append(cmd.Env, ExtraEnvVars...)
 	if debug {
 		cmd.Args = append(cmd.Args, "-debug")
 		cmd.Stderr = os.Stderr
@@ -57,8 +74,102 @@ func RunNucleiBareArgsAndGetResults(debug bool, extra ...string) ([]string, erro
 	if debug {
 		fmt.Println(string(data))
 	}
-	if err != nil {
-		return nil, err
+	if len(data) < 1 && err != nil {
+		return nil, fmt.Errorf("%v: %v", err.Error(), string(data))
+	}
+	var parts []string
+	items := strings.Split(string(data), "\n")
+	for _, i := range items {
+		if i != "" {
+			parts = append(parts, i)
+		}
+	}
+	return parts, nil
+}
+
+// RunNucleiArgsAndGetResults returns result,and runtime errors
+func RunNucleiWithArgsAndGetResults(debug bool, args ...string) ([]string, error) {
+	cmd := exec.Command("./nuclei", args...)
+	cmd.Env = append(cmd.Env, ExtraEnvVars...)
+	if debug {
+		cmd.Args = append(cmd.Args, "-debug")
+		cmd.Stderr = os.Stderr
+		fmt.Println(cmd.String())
+	} else {
+		cmd.Args = append(cmd.Args, "-silent")
+	}
+	data, err := cmd.Output()
+	if debug {
+		fmt.Println(string(data))
+	}
+	if len(data) < 1 && err != nil {
+		return nil, fmt.Errorf("%v: %v", err.Error(), string(data))
+	}
+	var parts []string
+	items := strings.Split(string(data), "\n")
+	for _, i := range items {
+		if i != "" {
+			parts = append(parts, i)
+		}
+	}
+	return parts, nil
+}
+
+// RunNucleiArgsAndGetErrors returns a list of errors in nuclei output (ERR,WRN,FTL)
+func RunNucleiArgsAndGetErrors(debug bool, env []string, extra ...string) ([]string, error) {
+	cmd := exec.Command("./nuclei")
+	extra = append(extra, ExtraDebugArgs...)
+	cmd.Env = append(os.Environ(), env...)
+	cmd.Args = append(cmd.Args, extra...)
+	cmd.Args = append(cmd.Args, "-duc") // disable auto updates
+	cmd.Args = append(cmd.Args, "-interactions-poll-duration", "1")
+	cmd.Args = append(cmd.Args, "-interactions-cooldown-period", "10")
+	cmd.Args = append(cmd.Args, "-allow-local-file-access")
+	cmd.Args = append(cmd.Args, "-nc") // disable color
+	cmd.Env = append(cmd.Env, ExtraEnvVars...)
+	data, err := cmd.CombinedOutput()
+	if debug {
+		fmt.Println(string(data))
+	}
+	results := []string{}
+	for _, v := range strings.Split(string(data), "\n") {
+		line := strings.TrimSpace(v)
+		switch {
+		case strings.HasPrefix(line, "[ERR]"):
+			results = append(results, line)
+		case strings.HasPrefix(line, "[WRN]"):
+			results = append(results, line)
+		case strings.HasPrefix(line, "[FTL]"):
+			results = append(results, line)
+		}
+	}
+	return results, err
+}
+
+// RunNucleiArgsWithEnvAndGetErrors returns a list of errors in nuclei output (ERR,WRN,FTL)
+func RunNucleiArgsWithEnvAndGetResults(debug bool, env []string, extra ...string) ([]string, error) {
+	cmd := exec.Command("./nuclei")
+	extra = append(extra, ExtraDebugArgs...)
+	cmd.Env = append(os.Environ(), env...)
+	cmd.Env = append(cmd.Env, ExtraEnvVars...)
+	cmd.Args = append(cmd.Args, extra...)
+	cmd.Args = append(cmd.Args, "-duc") // disable auto updates
+	cmd.Args = append(cmd.Args, "-interactions-poll-duration", "5")
+	cmd.Args = append(cmd.Args, "-interactions-cooldown-period", "10")
+	cmd.Args = append(cmd.Args, "-allow-local-file-access")
+	if debug {
+		cmd.Args = append(cmd.Args, "-debug")
+		cmd.Stderr = os.Stderr
+		fmt.Println(cmd.String())
+	} else {
+		cmd.Args = append(cmd.Args, "-silent")
+	}
+	data, err := cmd.Output()
+	if debug {
+		fmt.Println(string(data))
+	}
+	if len(data) < 1 && err != nil {
+		return nil, fmt.Errorf("%v: %v", err.Error(), string(data))
 	}
 	var parts []string
 	items := strings.Split(string(data), "\n")
@@ -75,6 +186,7 @@ var templateLoaded = regexp.MustCompile(`(?:Templates|Workflows) loaded[^:]*: (\
 // RunNucleiBinaryAndGetLoadedTemplates returns a list of results for a template
 func RunNucleiBinaryAndGetLoadedTemplates(nucleiBinary string, debug bool, args []string) (string, error) {
 	cmd := exec.Command(nucleiBinary, args...)
+	cmd.Env = append(cmd.Env, ExtraEnvVars...)
 	cmd.Args = append(cmd.Args, "-duc") // disable auto updates
 	if debug {
 		cmd.Args = append(cmd.Args, "-debug")
@@ -94,7 +206,9 @@ func RunNucleiBinaryAndGetLoadedTemplates(nucleiBinary string, debug bool, args 
 	return matches[0][1], nil
 }
 func RunNucleiBinaryAndGetCombinedOutput(debug bool, args []string) (string, error) {
+	args = append(args, "-interactions-cooldown-period", "10", "-interactions-poll-duration", "1")
 	cmd := exec.Command("./nuclei", args...)
+	cmd.Env = append(cmd.Env, ExtraEnvVars...)
 	if debug {
 		cmd.Args = append(cmd.Args, "-debug")
 		fmt.Println(cmd.String())

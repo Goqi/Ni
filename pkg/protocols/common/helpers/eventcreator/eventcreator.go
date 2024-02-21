@@ -1,11 +1,13 @@
 package eventcreator
 
 import (
+	"github.com/projectdiscovery/gologger"
 	"Ni/pkg/operators"
 	"Ni/pkg/output"
 	"Ni/pkg/protocols"
 	"Ni/pkg/protocols/common/utils/vardump"
-	"github.com/projectdiscovery/gologger"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // CreateEvent wraps the outputEvent with the result of the operators defined on the request
@@ -21,12 +23,21 @@ func CreateEventWithAdditionalOptions(request protocols.Request, outputEvent out
 
 	// Dump response variables if ran in debug mode
 	if vardump.EnableVarDump {
-		gologger.Debug().Msgf("Protocol response variables: \n%s\n", vardump.DumpVariables(outputEvent))
+		protoName := cases.Title(language.English).String(request.Type().String())
+		gologger.Debug().Msgf("%v Protocol response variables: \n%s\n", protoName, vardump.DumpVariables(outputEvent))
 	}
 	for _, compiledOperator := range request.GetCompiledOperators() {
 		if compiledOperator != nil {
 			result, ok := compiledOperator.Execute(outputEvent, request.Match, request.Extract, isResponseDebug)
 			if ok && result != nil {
+				// if result has both extracted values and dynamic values, put dynamic values in data
+				// and remove dynamic values to avoid skipping legitimate event
+				if (len(result.Extracts) > 0 || len(result.OutputExtracts) > 0) && len(result.DynamicValues) > 0 {
+					for k, v := range result.DynamicValues {
+						event.InternalEvent[k] = v
+					}
+					result.DynamicValues = nil
+				}
 				event.OperatorsResult = result
 				if addAdditionalOptions != nil {
 					addAdditionalOptions(event)

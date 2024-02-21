@@ -1,6 +1,7 @@
 package core
 
 import (
+	"Ni/pkg/output"
 	"Ni/pkg/protocols"
 	"Ni/pkg/protocols/common/contextargs"
 	"Ni/pkg/types"
@@ -17,7 +18,8 @@ import (
 type Engine struct {
 	workPool     *WorkPool
 	options      *types.Options
-	executerOpts protocols.ExecuterOptions
+	executerOpts protocols.ExecutorOptions
+	Callback     func(*output.ResultEvent) // Executed on results
 }
 
 // InputProvider is an input providing interface for the nuclei execution
@@ -37,27 +39,31 @@ type InputProvider interface {
 
 // New returns a new Engine instance
 func New(options *types.Options) *Engine {
-	workPool := NewWorkPool(WorkPoolConfig{
-		InputConcurrency:         options.BulkSize,
-		TypeConcurrency:          options.TemplateThreads,
-		HeadlessInputConcurrency: options.HeadlessBulkSize,
-		HeadlessTypeConcurrency:  options.HeadlessTemplateThreads,
-	})
 	engine := &Engine{
-		options:  options,
-		workPool: workPool,
+		options: options,
 	}
+	engine.workPool = engine.GetWorkPool()
 	return engine
+}
+
+// GetWorkPool returns a workpool from options
+func (e *Engine) GetWorkPool() *WorkPool {
+	return NewWorkPool(WorkPoolConfig{
+		InputConcurrency:         e.options.BulkSize,
+		TypeConcurrency:          e.options.TemplateThreads,
+		HeadlessInputConcurrency: e.options.HeadlessBulkSize,
+		HeadlessTypeConcurrency:  e.options.HeadlessTemplateThreads,
+	})
 }
 
 // SetExecuterOptions sets the executer options for the engine. This is required
 // before using the engine to perform any execution.
-func (e *Engine) SetExecuterOptions(options protocols.ExecuterOptions) {
+func (e *Engine) SetExecuterOptions(options protocols.ExecutorOptions) {
 	e.executerOpts = options
 }
 
-// ExecuterOptions returns protocols.ExecuterOptions for nuclei engine.
-func (e *Engine) ExecuterOptions() protocols.ExecuterOptions {
+// ExecuterOptions returns protocols.ExecutorOptions for nuclei engine.
+func (e *Engine) ExecuterOptions() protocols.ExecutorOptions {
 	return e.executerOpts
 }
 

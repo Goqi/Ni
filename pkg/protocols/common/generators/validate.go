@@ -3,11 +3,12 @@ package generators
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
+	"Ni/pkg/catalog/config"
 	"Ni/pkg/types"
+	fileutil "github.com/projectdiscovery/utils/file"
 	folderutil "github.com/projectdiscovery/utils/folder"
 )
 
@@ -22,10 +23,23 @@ func (g *PayloadGenerator) validate(payloads map[string]interface{}, templatePat
 			}
 
 			// check if it's a file and try to load it
-			if fileExists(payloadType) {
+			if fileutil.FileExists(payloadType) {
+				continue
+			}
+			// if file already exists in nuclei-templates directory, skip any further checks
+			if fileutil.FileExists(filepath.Join(config.DefaultConfig.GetTemplateDir(), payloadType)) {
 				continue
 			}
 
+			// in below code, we calculate all possible paths from root and try to resolve the payload
+			// at each level of the path. if the payload is found, we break the loop and continue
+			// ex: template-path: /home/user/nuclei-templates/cves/2020/CVE-2020-1234.yaml
+			// then we check if helper file "my-payload.txt" exists at below paths:
+			// 1. /home/user/nuclei-templates/cves/2020/my-payload.txt
+			// 2. /home/user/nuclei-templates/cves/my-payload.txt
+			// 3. /home/user/nuclei-templates/my-payload.txt
+			// 4. /home/user/my-payload.txt
+			// 5. /home/my-payload.txt
 			changed := false
 
 			dir, _ := filepath.Split(templatePath)
@@ -33,7 +47,7 @@ func (g *PayloadGenerator) validate(payloads map[string]interface{}, templatePat
 			payloadPathsToProbe, _ := templatePathInfo.MeshWith(payloadType)
 
 			for _, payloadPath := range payloadPathsToProbe {
-				if fileExists(payloadPath) {
+				if fileutil.FileExists(payloadPath) {
 					payloads[name] = payloadPath
 					changed = true
 					break
@@ -52,16 +66,4 @@ func (g *PayloadGenerator) validate(payloads map[string]interface{}, templatePat
 		}
 	}
 	return nil
-}
-
-// fileExists checks if a file exists and is not a directory
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	if info == nil {
-		return false
-	}
-	return !info.IsDir()
 }

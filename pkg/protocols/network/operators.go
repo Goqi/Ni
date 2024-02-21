@@ -9,6 +9,7 @@ import (
 	"Ni/pkg/operators/matchers"
 	"Ni/pkg/output"
 	"Ni/pkg/protocols"
+	protocolutils "Ni/pkg/protocols/utils"
 	"Ni/pkg/types"
 )
 
@@ -30,6 +31,8 @@ func (request *Request) Match(data map[string]interface{}, matcher *matchers.Mat
 		return matcher.ResultWithMatchedSnippet(matcher.MatchBinary(itemStr))
 	case matchers.DSLMatcher:
 		return matcher.Result(matcher.MatchDSL(data)), []string{}
+	case matchers.XPathMatcher:
+		return matcher.Result(matcher.MatchXPath(itemStr)), []string{}
 	}
 	return false, []string{}
 }
@@ -92,20 +95,28 @@ func (request *Request) GetCompiledOperators() []*operators.Operators {
 }
 
 func (request *Request) MakeResultEventItem(wrapped *output.InternalWrappedEvent) *output.ResultEvent {
+	fields := protocolutils.GetJsonFieldsFromURL(types.ToString(wrapped.InternalEvent["host"]))
+	if types.ToString(wrapped.InternalEvent["ip"]) != "" {
+		fields.Ip = types.ToString(wrapped.InternalEvent["ip"])
+	}
 	data := &output.ResultEvent{
 		TemplateID:       types.ToString(wrapped.InternalEvent["template-id"]),
 		TemplatePath:     types.ToString(wrapped.InternalEvent["template-path"]),
 		Info:             wrapped.InternalEvent["template-info"].(model.Info),
 		Type:             types.ToString(wrapped.InternalEvent["type"]),
-		Host:             types.ToString(wrapped.InternalEvent["host"]),
+		Host:             fields.Host,
+		Port:             fields.Port,
+		URL:              fields.URL,
 		Matched:          types.ToString(wrapped.InternalEvent["matched"]),
 		ExtractedResults: wrapped.OperatorsResult.OutputExtracts,
 		Metadata:         wrapped.OperatorsResult.PayloadValues,
 		Timestamp:        time.Now(),
 		MatcherStatus:    true,
-		IP:               types.ToString(wrapped.InternalEvent["ip"]),
+		IP:               fields.Ip,
 		Request:          types.ToString(wrapped.InternalEvent["request"]),
 		Response:         types.ToString(wrapped.InternalEvent["data"]),
+		TemplateEncoded:  request.options.EncodeTemplate(),
+		Error:            types.ToString(wrapped.InternalEvent["error"]),
 	}
 	return data
 }

@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"Ni/pkg/model/types/stringslice"
 	"github.com/alecthomas/jsonschema"
 	"github.com/pkg/errors"
-
-	"Ni/pkg/model/types/stringslice"
 	"github.com/projectdiscovery/goflags"
 )
 
@@ -24,6 +23,7 @@ const (
 	FileProtocol
 	// name:http
 	HTTPProtocol
+	// name:offline-http
 	OfflineHTTPProtocol
 	// name:headless
 	HeadlessProtocol
@@ -37,22 +37,28 @@ const (
 	WebsocketProtocol
 	// name:whois
 	WHOISProtocol
+	// name:code
+	CodeProtocol
+	// name: js
+	JavascriptProtocol
 	limit
 	InvalidProtocol
 )
 
 // ExtractorTypes is a table for conversion of extractor type from string.
 var protocolMappings = map[ProtocolType]string{
-	InvalidProtocol:   "invalid",
-	DNSProtocol:       "dns",
-	FileProtocol:      "file",
-	HTTPProtocol:      "http",
-	HeadlessProtocol:  "headless",
-	NetworkProtocol:   "network",
-	WorkflowProtocol:  "workflow",
-	SSLProtocol:       "ssl",
-	WebsocketProtocol: "websocket",
-	WHOISProtocol:     "whois",
+	InvalidProtocol:    "invalid",
+	DNSProtocol:        "dns",
+	FileProtocol:       "file",
+	HTTPProtocol:       "http",
+	HeadlessProtocol:   "headless",
+	NetworkProtocol:    "tcp",
+	WorkflowProtocol:   "workflow",
+	SSLProtocol:        "ssl",
+	WebsocketProtocol:  "websocket",
+	WHOISProtocol:      "whois",
+	CodeProtocol:       "code",
+	JavascriptProtocol: "javascript",
 }
 
 func GetSupportedProtocolTypes() ProtocolTypes {
@@ -152,6 +158,14 @@ func (protocolTypes *ProtocolTypes) UnmarshalYAML(unmarshal func(interface{}) er
 	}
 	*protocolTypes = result
 	return nil
+}
+
+func (protocolTypes ProtocolTypes) MarshalJSON() ([]byte, error) {
+	var stringProtocols = make([]string, 0, len(protocolTypes))
+	for _, protocol := range protocolTypes {
+		stringProtocols = append(stringProtocols, protocol.String())
+	}
+	return json.Marshal(stringProtocols)
 }
 
 func (protocolTypes ProtocolTypes) String() string {

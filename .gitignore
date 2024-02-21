@@ -1,8 +1,8 @@
+.git
 .idea
 idea
 .vscode
 
-config
 release
 pocs
 
@@ -12,5 +12,8 @@ upx.exe
 *.cfg
 ip.txt
 ips.txt
+urls.txt
 
 Ni.exe
+nuclei-3.1.10.zip
+nuclei-3.1.10

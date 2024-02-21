@@ -30,6 +30,8 @@ func (request *Request) Match(data map[string]interface{}, matcher *matchers.Mat
 		return matcher.ResultWithMatchedSnippet(matcher.MatchBinary(itemStr))
 	case matchers.DSLMatcher:
 		return matcher.Result(matcher.MatchDSL(data)), []string{}
+	case matchers.XPathMatcher:
+		return matcher.Result(matcher.MatchXPath(itemStr)), []string{}
 	}
 	return false, []string{}
 }
@@ -46,6 +48,10 @@ func (request *Request) Extract(data map[string]interface{}, extractor *extracto
 		return extractor.ExtractRegex(itemStr)
 	case extractors.KValExtractor:
 		return extractor.ExtractKval(data)
+	case extractors.JSONExtractor:
+		return extractor.ExtractJSON(itemStr)
+	case extractors.XPathExtractor:
+		return extractor.ExtractXPath(itemStr)
 	case extractors.DSLExtractor:
 		return extractor.ExtractDSL(data)
 	}
@@ -105,6 +111,8 @@ func (request *Request) MakeResultEventItem(wrapped *output.InternalWrappedEvent
 		ExtractedResults: wrapped.OperatorsResult.OutputExtracts,
 		Response:         types.ToString(wrapped.InternalEvent["raw"]),
 		Timestamp:        time.Now(),
+		TemplateEncoded:  request.options.EncodeTemplate(),
+		Error:            types.ToString(wrapped.InternalEvent["error"]),
 	}
 	return data
 }

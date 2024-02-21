@@ -4,10 +4,13 @@ package hybrid
 
 import (
 	"bufio"
+	"context"
+	"fmt"
 	"io"
-	"net/url"
 	"os"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,29 +19,49 @@ import (
 	"Ni/pkg/protocols/common/protocolstate"
 	"Ni/pkg/protocols/common/uncover"
 	"Ni/pkg/types"
-	"github.com/projectdiscovery/filekv"
+	"Ni/pkg/utils/expand"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/hmap/filekv"
 	"github.com/projectdiscovery/hmap/store/hybrid"
-	"github.com/projectdiscovery/mapcidr"
-	asn "github.com/projectdiscovery/mapcidr/asn"
+	"github.com/projectdiscovery/mapcidr/asn"
+	uncoverlib "github.com/projectdiscovery/uncover"
 	fileutil "github.com/projectdiscovery/utils/file"
 	iputil "github.com/projectdiscovery/utils/ip"
 	readerutil "github.com/projectdiscovery/utils/reader"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	urlutil "github.com/projectdiscovery/utils/url"
 )
+
+const DefaultMaxDedupeItemsCount = 10000
 
 // Input is a hmap/filekv backed nuclei Input provider
 type Input struct {
-	ipOptions     *ipOptions
-	inputCount    int64
-	dupeCount     int64
-	hostMap       *hybrid.HybridMap
-	hostMapStream *filekv.FileDB
+	ipOptions         *ipOptions
+	inputCount        int64
+	excludedCount     int64
+	dupeCount         int64
+	skippedCount      int64
+	hostMap           *hybrid.HybridMap
+	excludedHosts     map[string]struct{}
+	hostMapStream     *filekv.FileDB
+	hostMapStreamOnce sync.Once
+	sync.Once
+}
+
+// Options is a wrapper around types.Options structure
+type Options struct {
+	// Options contains options for hmap provider
+	Options *types.Options
+	// NotFoundCallback is called for each not found target
+	// This overrides error handling for not found target
+	NotFoundCallback func(template string) bool
 }
 
 // New creates a new hmap backed nuclei Input Provider
 // and initializes it based on the passed options Model.
-func New(options *types.Options) (*Input, error) {
+func New(opts *Options) (*Input, error) {
+	options := opts.Options
+
 	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create temporary input file")
@@ -51,11 +74,12 @@ func New(options *types.Options) (*Input, error) {
 			IPV4:       sliceutil.Contains(options.IPVersion, "4"),
 			IPV6:       sliceutil.Contains(options.IPVersion, "6"),
 		},
+		excludedHosts: make(map[string]struct{}),
 	}
 	if options.Stream {
 		fkvOptions := filekv.DefaultOptions
+		fkvOptions.MaxItems = DefaultMaxDedupeItemsCount
 		if tmpFileName, err := fileutil.GetTempFileName(); err != nil {
-
 			return nil, errors.Wrap(err, "could not create temporary input file")
 		} else {
 			fkvOptions.Path = tmpFileName
@@ -66,11 +90,17 @@ func New(options *types.Options) (*Input, error) {
 		}
 		input.hostMapStream = fkv
 	}
-	if initErr := input.initializeInputSources(options); initErr != nil {
+	if initErr := input.initializeInputSources(opts); initErr != nil {
 		return nil, initErr
+	}
+	if input.excludedCount > 0 {
+		gologger.Info().Msgf("Number of hosts excluded from input: %d", input.excludedCount)
 	}
 	if input.dupeCount > 0 {
 		gologger.Info().Msgf("Supplied input was automatically deduplicated (%d removed).", input.dupeCount)
+	}
+	if input.skippedCount > 0 {
+		gologger.Info().Msgf("Number of hosts skipped from input due to exclusion: %d", input.skippedCount)
 	}
 	return input, nil
 }
@@ -84,14 +114,18 @@ func (i *Input) Close() {
 }
 
 // initializeInputSources initializes the input sources for hmap input
-func (i *Input) initializeInputSources(options *types.Options) error {
+func (i *Input) initializeInputSources(opts *Options) error {
+	options := opts.Options
+
 	// Handle targets flags
 	for _, target := range options.Targets {
 		switch {
 		case iputil.IsCIDR(target):
-			i.expandCIDRInputValue(target)
+			ips := expand.CIDR(target)
+			i.addTargets(ips)
 		case asn.IsASN(target):
-			i.expandASNInputValue(target)
+			ips := expand.ASN(target)
+			i.addTargets(ips)
 		default:
 			i.Set(target)
 		}
@@ -106,15 +140,28 @@ func (i *Input) initializeInputSources(options *types.Options) error {
 	if options.TargetsFilePath != "" {
 		input, inputErr := os.Open(options.TargetsFilePath)
 		if inputErr != nil {
-			return errors.Wrap(inputErr, "could not open targets file")
+			// Handle cloud based input here.
+			if opts.NotFoundCallback == nil || !opts.NotFoundCallback(options.TargetsFilePath) {
+				return errors.Wrap(inputErr, "could not open targets file")
+			}
 		}
-		defer input.Close()
-
-		i.scanInputFromReader(input)
+		if input != nil {
+			i.scanInputFromReader(input)
+			input.Close()
+		}
 	}
 	if options.Uncover && options.UncoverQuery != nil {
 		gologger.Info().Msgf("Running uncover query against: %s", strings.Join(options.UncoverEngine, ","))
-		ch, err := uncover.GetTargetsFromUncover(options.UncoverDelay, options.UncoverLimit, options.UncoverField, options.UncoverEngine, options.UncoverQuery)
+		uncoverOpts := &uncoverlib.Options{
+			Agents:        options.UncoverEngine,
+			Queries:       options.UncoverQuery,
+			Limit:         options.UncoverLimit,
+			MaxRetry:      options.Retries,
+			Timeout:       options.Timeout,
+			RateLimit:     uint(options.UncoverRateLimit),
+			RateLimitUnit: time.Minute, // default unit is minute
+		}
+		ch, err := uncover.GetTargetsFromUncover(context.TODO(), options.UncoverField, uncoverOpts)
 		if err != nil {
 			return err
 		}
@@ -122,6 +169,22 @@ func (i *Input) initializeInputSources(options *types.Options) error {
 			i.Set(c)
 		}
 	}
+
+	if len(options.ExcludeTargets) > 0 {
+		for _, target := range options.ExcludeTargets {
+			switch {
+			case iputil.IsCIDR(target):
+				ips := expand.CIDR(target)
+				i.removeTargets(ips)
+			case asn.IsASN(target):
+				ips := expand.ASN(target)
+				i.removeTargets(ips)
+			default:
+				i.Del(target)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -132,9 +195,11 @@ func (i *Input) scanInputFromReader(reader io.Reader) {
 		item := scanner.Text()
 		switch {
 		case iputil.IsCIDR(item):
-			i.expandCIDRInputValue(item)
+			ips := expand.CIDR(item)
+			i.addTargets(ips)
 		case asn.IsASN(item):
-			i.expandASNInputValue(item)
+			ips := expand.ASN(item)
+			i.addTargets(ips)
 		default:
 			i.Set(item)
 		}
@@ -147,50 +212,65 @@ func (i *Input) Set(value string) {
 	if URL == "" {
 		return
 	}
-	// actual hostname
-	var host string
 	// parse hostname if url is given
-	parsedURL, err := url.Parse(value)
-	if err == nil && parsedURL.Host != "" {
-		host = parsedURL.Host
-	} else {
-		parsedURL = nil
-		host = value
+	urlx, err := urlutil.Parse(URL)
+	if err != nil || (urlx != nil && urlx.Host == "") {
+		gologger.Debug().Label("url").MsgFunc(func() string {
+			if err != nil {
+				return fmt.Sprintf("failed to parse url %v got %v skipping ip selection", URL, err)
+			}
+			return fmt.Sprintf("got empty hostname for %v skipping ip selection", URL)
+		})
+		metaInput := &contextargs.MetaInput{Input: URL}
+		i.setItem(metaInput)
+		return
+	}
+
+	// Check if input is ip or hostname
+	if iputil.IsIP(urlx.Hostname()) {
+		metaInput := &contextargs.MetaInput{Input: URL}
+		i.setItem(metaInput)
+		return
 	}
 
 	if i.ipOptions.ScanAllIPs {
 		// scan all ips
-		dnsData, err := protocolstate.Dialer.GetDNSData(host)
-		if err == nil && (len(dnsData.A)+len(dnsData.AAAA)) > 0 {
-			var ips []string
-			if i.ipOptions.IPV4 {
-				ips = append(ips, dnsData.A...)
-			}
-			if i.ipOptions.IPV6 {
-				ips = append(ips, dnsData.AAAA...)
-			}
-			for _, ip := range ips {
-				if ip == "" {
-					continue
+		dnsData, err := protocolstate.Dialer.GetDNSData(urlx.Hostname())
+		if err == nil {
+			if (len(dnsData.A) + len(dnsData.AAAA)) > 0 {
+				var ips []string
+				if i.ipOptions.IPV4 {
+					ips = append(ips, dnsData.A...)
 				}
-				metaInput := &contextargs.MetaInput{Input: value, CustomIP: ip}
-				i.setItem(metaInput)
+				if i.ipOptions.IPV6 {
+					ips = append(ips, dnsData.AAAA...)
+				}
+				for _, ip := range ips {
+					if ip == "" {
+						continue
+					}
+					metaInput := &contextargs.MetaInput{Input: value, CustomIP: ip}
+					i.setItem(metaInput)
+				}
+				return
+			} else {
+				gologger.Debug().Msgf("scanAllIps: no ip's found reverting to default")
 			}
-			return
+		} else {
+			// failed to scanallips falling back to defaults
+			gologger.Debug().Msgf("scanAllIps: dns resolution failed: %v", err)
 		}
-		// failed to scanallips falling back to defaults
-		gologger.Error().Msgf("failed to scan all ips reverting to default %v", err)
 	}
 
 	ips := []string{}
 	// only scan the target but ipv6 if it has one
 	if i.ipOptions.IPV6 {
-		dnsData, err := protocolstate.Dialer.GetDNSData(host)
+		dnsData, err := protocolstate.Dialer.GetDNSData(urlx.Hostname())
 		if err == nil && len(dnsData.AAAA) > 0 {
 			// pick/ prefer 1st
 			ips = append(ips, dnsData.AAAA[0])
 		} else {
-			gologger.Warning().Msgf("target does not have ipv6 address falling back to ipv4 %s\n", err)
+			gologger.Warning().Msgf("target does not have ipv6 address falling back to ipv4 %v\n", err)
 		}
 	}
 	if i.ipOptions.IPV4 {
@@ -207,7 +287,114 @@ func (i *Input) Set(value string) {
 			i.setItem(metaInput)
 		}
 	}
+}
 
+// SetWithExclusions normalizes and stores passed input values if not excluded
+func (i *Input) SetWithExclusions(value string) {
+	URL := strings.TrimSpace(value)
+	if URL == "" {
+		return
+	}
+	if i.isExcluded(URL) {
+		i.skippedCount++
+		return
+	}
+	i.Set(URL)
+}
+
+// isExcluded checks if a URL is in the exclusion list
+func (i *Input) isExcluded(URL string) bool {
+	metaInput := &contextargs.MetaInput{Input: URL}
+	key, err := metaInput.MarshalString()
+	if err != nil {
+		gologger.Warning().Msgf("%s\n", err)
+		return false
+	}
+
+	_, exists := i.excludedHosts[key]
+	return exists
+}
+
+func (i *Input) Del(value string) {
+	URL := strings.TrimSpace(value)
+	if URL == "" {
+		return
+	}
+	// parse hostname if url is given
+	urlx, err := urlutil.Parse(URL)
+	if err != nil || (urlx != nil && urlx.Host == "") {
+		gologger.Debug().Label("url").MsgFunc(func() string {
+			if err != nil {
+				return fmt.Sprintf("failed to parse url %v got %v skipping ip selection", URL, err)
+			}
+			return fmt.Sprintf("got empty hostname for %v skipping ip selection", URL)
+		})
+		metaInput := &contextargs.MetaInput{Input: URL}
+		i.delItem(metaInput)
+		return
+	}
+
+	// Check if input is ip or hostname
+	if iputil.IsIP(urlx.Hostname()) {
+		metaInput := &contextargs.MetaInput{Input: URL}
+		i.delItem(metaInput)
+		return
+	}
+
+	if i.ipOptions.ScanAllIPs {
+		// scan all ips
+		dnsData, err := protocolstate.Dialer.GetDNSData(urlx.Hostname())
+		if err == nil {
+			if (len(dnsData.A) + len(dnsData.AAAA)) > 0 {
+				var ips []string
+				if i.ipOptions.IPV4 {
+					ips = append(ips, dnsData.A...)
+				}
+				if i.ipOptions.IPV6 {
+					ips = append(ips, dnsData.AAAA...)
+				}
+				for _, ip := range ips {
+					if ip == "" {
+						continue
+					}
+					metaInput := &contextargs.MetaInput{Input: value, CustomIP: ip}
+					i.delItem(metaInput)
+				}
+				return
+			} else {
+				gologger.Debug().Msgf("scanAllIps: no ip's found reverting to default")
+			}
+		} else {
+			// failed to scanallips falling back to defaults
+			gologger.Debug().Msgf("scanAllIps: dns resolution failed: %v", err)
+		}
+	}
+
+	ips := []string{}
+	// only scan the target but ipv6 if it has one
+	if i.ipOptions.IPV6 {
+		dnsData, err := protocolstate.Dialer.GetDNSData(urlx.Hostname())
+		if err == nil && len(dnsData.AAAA) > 0 {
+			// pick/ prefer 1st
+			ips = append(ips, dnsData.AAAA[0])
+		} else {
+			gologger.Warning().Msgf("target does not have ipv6 address falling back to ipv4 %v\n", err)
+		}
+	}
+	if i.ipOptions.IPV4 {
+		// if IPV4 is enabled do not specify ip let dialer handle it
+		ips = append(ips, "")
+	}
+
+	for _, ip := range ips {
+		if ip != "" {
+			metaInput := &contextargs.MetaInput{Input: URL, CustomIP: ip}
+			i.delItem(metaInput)
+		} else {
+			metaInput := &contextargs.MetaInput{Input: URL}
+			i.delItem(metaInput)
+		}
+	}
 }
 
 // setItem in the kv store
@@ -225,7 +412,48 @@ func (i *Input) setItem(metaInput *contextargs.MetaInput) {
 	i.inputCount++ // tracks target count
 	_ = i.hostMap.Set(key, nil)
 	if i.hostMapStream != nil {
-		_ = i.hostMapStream.Set([]byte(key), nil)
+		i.setHostMapStream(key)
+	}
+}
+
+// setItem in the kv store
+func (i *Input) delItem(metaInput *contextargs.MetaInput) {
+	targetUrl, err := urlutil.ParseURL(metaInput.Input, true)
+	if err != nil {
+		gologger.Warning().Msgf("%s\n", err)
+		return
+	}
+
+	i.hostMap.Scan(func(k, _ []byte) error {
+		var tmpMetaInput contextargs.MetaInput
+		if err := tmpMetaInput.Unmarshal(string(k)); err != nil {
+			return err
+		}
+		tmpKey, err := tmpMetaInput.MarshalString()
+		if err != nil {
+			return err
+		}
+		tmpUrl, err := urlutil.ParseURL(tmpMetaInput.Input, true)
+		if err != nil {
+			return err
+		}
+
+		matched, _ := regexp.MatchString(metaInput.Input, tmpUrl.Host)
+		if tmpUrl.Host == targetUrl.Host || matched {
+			_ = i.hostMap.Del(tmpKey)
+			i.excludedHosts[tmpKey] = struct{}{}
+			i.excludedCount++
+			i.inputCount--
+		}
+		return nil
+	})
+}
+
+// setHostMapStream sets item in stream mode
+func (i *Input) setHostMapStream(data string) {
+	if _, err := i.hostMapStream.Merge([][]byte{[]byte(data)}); err != nil {
+		gologger.Warning().Msgf("%s\n", err)
+		return
 	}
 }
 
@@ -237,6 +465,13 @@ func (i *Input) Count() int64 {
 // Scan iterates the input and each found item is passed to the
 // callback consumer.
 func (i *Input) Scan(callback func(value *contextargs.MetaInput) bool) {
+	if i.hostMapStream != nil {
+		i.hostMapStreamOnce.Do(func() {
+			if err := i.hostMapStream.Process(); err != nil {
+				gologger.Warning().Msgf("error in stream mode processing: %s\n", err)
+			}
+		})
+	}
 	callbackFunc := func(k, _ []byte) error {
 		metaInput := &contextargs.MetaInput{}
 		if err := metaInput.Unmarshal(string(k)); err != nil {
@@ -254,33 +489,15 @@ func (i *Input) Scan(callback func(value *contextargs.MetaInput) bool) {
 	}
 }
 
-// expandCIDRInputValue expands CIDR and stores expanded IPs
-func (i *Input) expandCIDRInputValue(value string) {
-	ips, _ := mapcidr.IPAddressesAsStream(value)
-	for ip := range ips {
-		metaInput := &contextargs.MetaInput{Input: ip}
-		key, err := metaInput.MarshalString()
-		if err != nil {
-			gologger.Warning().Msgf("%s\n", err)
-			return
-		}
-		if _, ok := i.hostMap.Get(key); ok {
-			i.dupeCount++
-			continue
-		}
-		i.inputCount++
-		_ = i.hostMap.Set(key, nil)
-		if i.hostMapStream != nil {
-			_ = i.hostMapStream.Set([]byte(key), nil)
-		}
+func (i *Input) addTargets(targets []string) {
+	for _, target := range targets {
+		i.Set(target)
 	}
 }
 
-// expandASNInputValue expands CIDRs for given ASN and stores expanded IPs
-func (i *Input) expandASNInputValue(value string) {
-	asnClient := asn.New()
-	cidrs, _ := asnClient.GetCIDRsForASNNum(value)
-	for _, cidr := range cidrs {
-		i.expandCIDRInputValue(cidr.String())
+func (i *Input) removeTargets(targets []string) {
+	for _, target := range targets {
+		metaInput := &contextargs.MetaInput{Input: target}
+		i.delItem(metaInput)
 	}
 }

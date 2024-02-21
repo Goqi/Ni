@@ -1,7 +1,8 @@
 package http
 
 import (
-	"Ni/pkg/protocols/common/compare"
+	sliceutil "github.com/projectdiscovery/utils/slice"
+	"golang.org/x/exp/maps"
 )
 
 // CanCluster returns true if the request can be clustered.
@@ -15,14 +16,14 @@ func (request *Request) CanCluster(other *Request) bool {
 	}
 	if request.Method != other.Method ||
 		request.MaxRedirects != other.MaxRedirects ||
-		request.CookieReuse != other.CookieReuse ||
+		request.DisableCookie != other.DisableCookie ||
 		request.Redirects != other.Redirects {
 		return false
 	}
-	if !compare.StringSlice(request.Path, other.Path) {
+	if !sliceutil.Equal(request.Path, other.Path) {
 		return false
 	}
-	if !compare.StringMap(request.Headers, other.Headers) {
+	if !maps.Equal(request.Headers, other.Headers) {
 		return false
 	}
 	return true

@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/net/proxy"
 
+	"github.com/projectdiscovery/fastdialer/fastdialer/ja3/impersonate"
 	"Ni/pkg/protocols/common/protocolstate"
 	"Ni/pkg/protocols/utils"
 	"Ni/pkg/types"
@@ -39,9 +40,17 @@ func newHttpClient(options *types.Options) (*http.Client, error) {
 	}
 
 	transport := &http.Transport{
-		ForceAttemptHTTP2:   options.ForceAttemptHTTP2,
-		DialContext:         dialer.Dial,
-		DialTLSContext:      dialer.DialTLS,
+		ForceAttemptHTTP2: options.ForceAttemptHTTP2,
+		DialContext:       dialer.Dial,
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if options.TlsImpersonate {
+				return dialer.DialTLSWithConfigImpersonate(ctx, network, addr, tlsConfig, impersonate.Random, nil)
+			}
+			if options.HasClientCertificates() || options.ForceAttemptHTTP2 {
+				return dialer.DialTLSWithConfig(ctx, network, addr, tlsConfig)
+			}
+			return dialer.DialTLS(ctx, network, addr)
+		},
 		MaxIdleConns:        500,
 		MaxIdleConnsPerHost: 500,
 		MaxConnsPerHost:     500,
@@ -64,9 +73,7 @@ func newHttpClient(options *types.Options) (*http.Client, error) {
 		dc := dialer.(interface {
 			DialContext(ctx context.Context, network, addr string) (net.Conn, error)
 		})
-		if proxyErr == nil {
-			transport.DialContext = dc.DialContext
-		}
+		transport.DialContext = dc.DialContext
 	}
 
 	jar, _ := cookiejar.New(nil)

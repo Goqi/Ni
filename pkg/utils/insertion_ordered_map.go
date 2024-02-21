@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -44,8 +45,20 @@ func (insertionOrderedStringMap *InsertionOrderedStringMap) UnmarshalYAML(unmars
 	return nil
 }
 
+func (insertionOrderedStringMap *InsertionOrderedStringMap) UnmarshalJSON(data []byte) error {
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal(data, &dataMap); err != nil {
+		return err
+	}
+	insertionOrderedStringMap.values = make(map[string]interface{})
+	for k, v := range dataMap {
+		insertionOrderedStringMap.Set(k, toString(v))
+	}
+	return nil
+}
+
 // toString converts an interface to string in a quick way
-func toString(data interface{}) string {
+func toString(data interface{}) interface{} {
 	switch s := data.(type) {
 	case nil:
 		return ""
@@ -79,6 +92,8 @@ func toString(data interface{}) string {
 		return strconv.FormatUint(uint64(s), 10)
 	case []byte:
 		return string(s)
+	case []interface{}:
+		return data
 	default:
 		return fmt.Sprintf("%v", data)
 	}

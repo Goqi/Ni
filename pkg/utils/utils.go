@@ -3,11 +3,14 @@ package utils
 import (
 	"errors"
 	"io"
-	"net/http"
 	"net/url"
 	"strings"
 
 	"Ni/pkg/catalog"
+	"Ni/pkg/catalog/config"
+	"Ni/pkg/utils/yaml"
+	"github.com/projectdiscovery/retryablehttp-go"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 func IsBlank(value string) bool {
@@ -27,42 +30,42 @@ func UnwrapError(err error) error {
 
 // IsURL tests a string to determine if it is a well-structured url or not.
 func IsURL(input string) bool {
-	_, err := url.ParseRequestURI(input)
-	if err != nil {
-		return false
-	}
-
 	u, err := url.Parse(input)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return false
-	}
-
-	return true
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
 // ReadFromPathOrURL reads and returns the contents of a file or url.
 func ReadFromPathOrURL(templatePath string, catalog catalog.Catalog) (data []byte, err error) {
+	var reader io.Reader
 	if IsURL(templatePath) {
-		resp, err := http.Get(templatePath)
+		resp, err := retryablehttp.DefaultClient().Get(templatePath)
 		if err != nil {
 			return nil, err
 		}
 		defer resp.Body.Close()
-		data, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
+		reader = resp.Body
 	} else {
 		f, err := catalog.OpenFile(templatePath)
 		if err != nil {
 			return nil, err
 		}
 		defer f.Close()
-		data, err = io.ReadAll(f)
+		reader = f
+	}
+
+	data, err = io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	// pre-process directives only for local files
+	if fileutil.FileExists(templatePath) && config.GetTemplateFormatFromExt(templatePath) == config.YAML {
+		data, err = yaml.PreProcess(data)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	return
 }
 

@@ -2,16 +2,16 @@ package http
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
-	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/projectdiscovery/fastdialer/fastdialer"
+	"github.com/projectdiscovery/retryablehttp-go"
 	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
-	urlutil "github.com/projectdiscovery/utils/url"
 )
 
 var (
@@ -20,9 +20,9 @@ var (
 	// @tls-sni:target overrides the input target with the annotated one
 	// special values:
 	// request.host: takes the value from the host header
-	// target: overiddes with the specific value
+	// target: overrides with the specific value
 	reSniAnnotation = regexp.MustCompile(`(?m)^@tls-sni:\s*(.+)\s*$`)
-	// @timeout:duration overrides the input timout with a custom duration
+	// @timeout:duration overrides the input timeout with a custom duration
 	reTimeoutAnnotation = regexp.MustCompile(`(?m)^@timeout:\s*(.+)\s*$`)
 	// @once sets the request to be executed only once for a specific URL
 	reOnceAnnotation = regexp.MustCompile(`(?m)^@once\s*$`)
@@ -37,24 +37,26 @@ const (
 // parseFlowAnnotations and override requests flow
 func parseFlowAnnotations(rawRequest string) (flowMark, bool) {
 	var fm flowMark
-	// parse request for known ovverride annotations
-	var hasFlowOveride bool
+	// parse request for known override annotations
+	var hasFlowOverride bool
 	// @once
 	if reOnceAnnotation.MatchString(rawRequest) {
 		fm = Once
-		hasFlowOveride = true
+		hasFlowOverride = true
 	}
 
-	return fm, hasFlowOveride
+	return fm, hasFlowOverride
+}
+
+type annotationOverrides struct {
+	request        *retryablehttp.Request
+	cancelFunc     context.CancelFunc
+	interactshURLs []string
 }
 
 // parseAnnotations and override requests settings
-func (r *Request) parseAnnotations(rawRequest string, request *http.Request) (*http.Request, context.CancelFunc, bool) {
-	var (
-		modified   bool
-		cancelFunc context.CancelFunc
-	)
-	// parse request for known ovverride annotations
+func (r *Request) parseAnnotations(rawRequest string, request *retryablehttp.Request) (overrides annotationOverrides, modified bool) {
+	// parse request for known override annotations
 
 	// @Host:target
 	if hosts := reHostAnnotation.FindStringSubmatch(rawRequest); len(hosts) > 0 {
@@ -62,9 +64,9 @@ func (r *Request) parseAnnotations(rawRequest string, request *http.Request) (*h
 		// handle scheme
 		switch {
 		case stringsutil.HasPrefixI(value, "http://"):
-			request.URL.Scheme = urlutil.HTTP
+			request.URL.Scheme = "http"
 		case stringsutil.HasPrefixI(value, "https://"):
-			request.URL.Scheme = urlutil.HTTPS
+			request.URL.Scheme = "https"
 		}
 
 		value = stringsutil.TrimPrefixAny(value, "http://", "https://")
@@ -86,15 +88,25 @@ func (r *Request) parseAnnotations(rawRequest string, request *http.Request) (*h
 	if hosts := reSniAnnotation.FindStringSubmatch(rawRequest); len(hosts) > 0 {
 		value := strings.TrimSpace(hosts[1])
 		value = stringsutil.TrimPrefixAny(value, "http://", "https://")
-		if idxForwardSlash := strings.Index(value, "/"); idxForwardSlash >= 0 {
-			value = value[:idxForwardSlash]
-		}
 
-		if stringsutil.EqualFoldAny(value, "request.host") {
+		var literal bool
+		switch value {
+		case "request.host":
 			value = request.Host
+		case "interactsh-url":
+			if interactshURL, err := r.options.Interactsh.NewURLWithData("interactsh-url"); err == nil {
+				value = interactshURL
+			}
+			overrides.interactshURLs = append(overrides.interactshURLs, value)
+		default:
+			literal = true
 		}
 		ctx := context.WithValue(request.Context(), fastdialer.SniName, value)
 		request = request.Clone(ctx)
+
+		if literal {
+			request.TLS = &tls.ConnectionState{ServerName: value}
+		}
 		modified = true
 	}
 
@@ -107,17 +119,19 @@ func (r *Request) parseAnnotations(rawRequest string, request *http.Request) (*h
 			value := strings.TrimSpace(duration[1])
 			if parsed, err := time.ParseDuration(value); err == nil {
 				//nolint:govet // cancelled automatically by withTimeout
-				ctx, cancelFunc = context.WithTimeout(context.Background(), parsed)
+				ctx, overrides.cancelFunc = context.WithTimeout(context.Background(), parsed)
 				request = request.Clone(ctx)
 			}
 		} else {
 			//nolint:govet // cancelled automatically by withTimeout
-			ctx, cancelFunc = context.WithTimeout(context.Background(), time.Duration(r.options.Options.Timeout)*time.Second)
+			ctx, overrides.cancelFunc = context.WithTimeout(context.Background(), time.Duration(r.options.Options.Timeout)*time.Second)
 			request = request.Clone(ctx)
 		}
 	}
 
-	return request, cancelFunc, modified
+	overrides.request = request
+
+	return
 }
 
 func isHostPort(value string) bool {

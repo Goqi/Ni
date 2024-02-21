@@ -6,18 +6,31 @@ import (
 	"path/filepath"
 	"strings"
 
+	"Ni/pkg/catalog/config"
+	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
+	stringsutil "github.com/projectdiscovery/utils/strings"
+	updateutils "github.com/projectdiscovery/utils/update"
+	urlutil "github.com/projectdiscovery/utils/url"
 )
 
+var deprecatedPathsCounter int
+
 // GetTemplatesPath returns a list of absolute paths for the provided template list.
-func (c *DiskCatalog) GetTemplatesPath(definitions []string) []string {
+func (c *DiskCatalog) GetTemplatesPath(definitions []string) ([]string, map[string]error) {
 	// keeps track of processed dirs and files
 	processed := make(map[string]bool)
 	allTemplates := []string{}
+	erred := make(map[string]error)
 
 	for _, t := range definitions {
-		if strings.HasPrefix(t, "http") && (strings.HasSuffix(t, ".yaml") || strings.HasSuffix(t, ".yml")) {
+		if stringsutil.ContainsAny(t, knownConfigFiles...) {
+			// TODO: this is a temporary fix to avoid treating these files as templates
+			// this should be replaced with more appropriate and robust logic
+			continue
+		}
+		if strings.Contains(t, urlutil.SchemeSeparator) && stringsutil.ContainsAny(t, config.GetSupportTemplateFileExtensions()...) {
 			if _, ok := processed[t]; !ok {
 				processed[t] = true
 				allTemplates = append(allTemplates, t)
@@ -25,7 +38,7 @@ func (c *DiskCatalog) GetTemplatesPath(definitions []string) []string {
 		} else {
 			paths, err := c.GetTemplatePath(t)
 			if err != nil {
-				gologger.Error().Msgf("Could not find template '%s': %s\n", t, err)
+				erred[t] = err
 			}
 			for _, path := range paths {
 				if _, ok := processed[path]; !ok {
@@ -35,7 +48,17 @@ func (c *DiskCatalog) GetTemplatesPath(definitions []string) []string {
 			}
 		}
 	}
-	return allTemplates
+	// purge all false positives
+	filteredTemplates := []string{}
+	for _, v := range allTemplates {
+		// TODO: this is a temporary fix to avoid treating these files as templates
+		// this should be replaced with more appropriate and robust logic
+		if !stringsutil.ContainsAny(v, knownConfigFiles...) {
+			filteredTemplates = append(filteredTemplates, v)
+		}
+	}
+
+	return filteredTemplates, erred
 }
 
 // GetTemplatePath parses the specified input template path and returns a compiled
@@ -43,15 +66,9 @@ func (c *DiskCatalog) GetTemplatesPath(definitions []string) []string {
 // or folders provided as in.
 func (c *DiskCatalog) GetTemplatePath(target string) ([]string, error) {
 	processed := make(map[string]struct{})
-
-	absPath, err := c.convertPathToAbsolute(target)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not find template file")
-	}
-
 	// Template input includes a wildcard
-	if strings.Contains(absPath, "*") {
-		matches, findErr := c.findGlobPathMatches(absPath, processed)
+	if strings.Contains(target, "*") {
+		matches, findErr := c.findGlobPathMatches(target, processed)
 		if findErr != nil {
 			return nil, errors.Wrap(findErr, "could not find glob matches")
 		}
@@ -59,6 +76,20 @@ func (c *DiskCatalog) GetTemplatePath(target string) ([]string, error) {
 			return nil, errors.Errorf("no templates found for path")
 		}
 		return matches, nil
+	}
+
+	// try to handle deprecated template paths
+	absPath := BackwardsCompatiblePaths(c.templatesDirectory, target)
+	if absPath != target && strings.TrimPrefix(absPath, c.templatesDirectory+string(filepath.Separator)) != target {
+		if config.DefaultConfig.LogAllEvents {
+			gologger.DefaultLogger.Print().Msgf("[%v] requested Template path %s is deprecated, please update to %s\n", aurora.Yellow("WRN").String(), target, absPath)
+		}
+		deprecatedPathsCounter++
+	}
+
+	absPath, err := c.convertPathToAbsolute(absPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not find template file")
 	}
 
 	// Template input is either a file or a directory
@@ -101,8 +132,34 @@ func (c *DiskCatalog) convertPathToAbsolute(t string) (string, error) {
 
 // findGlobPathMatches returns the matched files from a glob path
 func (c *DiskCatalog) findGlobPathMatches(absPath string, processed map[string]struct{}) ([]string, error) {
-	matches, err := filepath.Glob(absPath)
-	if err != nil {
+	// to support globbing on old paths we use brute force to find matches with exit on first match
+	// trim templateDir if any
+	relPath := strings.TrimPrefix(absPath, c.templatesDirectory)
+	// trim leading slash if any
+	relPath = strings.TrimPrefix(relPath, string(os.PathSeparator))
+
+	OldPathsResolver := func(inputGlob string) []string {
+		templateDir := c.templatesDirectory
+		if c.templatesDirectory == "" {
+			templateDir = "./"
+		}
+		matches, _ := fs.Glob(os.DirFS(filepath.Join(templateDir, "http")), inputGlob)
+		if len(matches) != 0 {
+			return matches
+		}
+		// condition to support network cve related globs
+		matches, _ = fs.Glob(os.DirFS(filepath.Join(templateDir, "network")), inputGlob)
+		return matches
+	}
+
+	var matched []string
+	matches, err := fs.Glob(c.templatesFS, relPath)
+	if len(matches) != 0 {
+		matched = append(matched, matches...)
+	} else {
+		matched = append(matched, OldPathsResolver(relPath)...)
+	}
+	if err != nil && len(matched) == 0 {
 		return nil, errors.Errorf("wildcard found, but unable to glob: %s\n", err)
 	}
 	results := make([]string, 0, len(matches))
@@ -142,7 +199,7 @@ func (c *DiskCatalog) findDirectoryMatches(absPath string, processed map[string]
 			if err != nil {
 				return nil
 			}
-			if !d.IsDir() && strings.HasSuffix(path, ".yaml") {
+			if !d.IsDir() && config.GetTemplateFormatFromExt(path) != config.Unknown {
 				if _, ok := processed[path]; !ok {
 					results = append(results, path)
 					processed[path] = struct{}{}
@@ -152,4 +209,15 @@ func (c *DiskCatalog) findDirectoryMatches(absPath string, processed map[string]
 		},
 	)
 	return results, err
+}
+
+// PrintDeprecatedPathsMsgIfApplicable prints a warning message if any deprecated paths are found
+// Unless mode is silent warning message is printed
+func PrintDeprecatedPathsMsgIfApplicable(isSilent bool) {
+	if !updateutils.IsOutdated("v9.4.3", config.DefaultConfig.TemplateVersion) {
+		return
+	}
+	if deprecatedPathsCounter > 0 && !isSilent {
+		gologger.Print().Msgf("[%v] Found %v template[s] loaded with deprecated paths, update before v3 for continued support.\n", aurora.Yellow("WRN").String(), deprecatedPathsCounter)
+	}
 }

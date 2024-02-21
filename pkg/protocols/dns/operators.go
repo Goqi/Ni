@@ -13,6 +13,7 @@ import (
 	"Ni/pkg/operators/matchers"
 	"Ni/pkg/output"
 	"Ni/pkg/protocols"
+	"Ni/pkg/protocols/common/generators"
 	"Ni/pkg/types"
 	"github.com/projectdiscovery/retryabledns"
 )
@@ -41,6 +42,8 @@ func (request *Request) Match(data map[string]interface{}, matcher *matchers.Mat
 		return matcher.ResultWithMatchedSnippet(matcher.MatchBinary(types.ToString(item)))
 	case matchers.DSLMatcher:
 		return matcher.Result(matcher.MatchDSL(data)), []string{}
+	case matchers.XPathMatcher:
+		return matcher.Result(matcher.MatchXPath(types.ToString(item))), []string{}
 	}
 	return false, []string{}
 }
@@ -79,7 +82,7 @@ func (request *Request) getMatchPart(part string, data output.InternalEvent) (in
 
 // responseToDSLMap converts a DNS response to a map for use in DSL matching
 func (request *Request) responseToDSLMap(req, resp *dns.Msg, host, matched string, traceData *retryabledns.TraceData) output.InternalEvent {
-	return output.InternalEvent{
+	ret := output.InternalEvent{
 		"host":          host,
 		"matched":       matched,
 		"request":       req.String(),
@@ -95,6 +98,10 @@ func (request *Request) responseToDSLMap(req, resp *dns.Msg, host, matched strin
 		"type":          request.Type().String(),
 		"trace":         traceToString(traceData, false),
 	}
+	if len(resp.Answer) > 0 {
+		ret = generators.MergeMaps(ret, recordsKeyValue(resp.Answer))
+	}
+	return ret
 }
 
 // MakeResultEvent creates a result event from internal wrapped event
@@ -115,6 +122,8 @@ func (request *Request) MakeResultEventItem(wrapped *output.InternalWrappedEvent
 		Timestamp:        time.Now(),
 		Request:          types.ToString(wrapped.InternalEvent["request"]),
 		Response:         types.ToString(wrapped.InternalEvent["raw"]),
+		TemplateEncoded:  request.options.EncodeTemplate(),
+		Error:            types.ToString(wrapped.InternalEvent["error"]),
 	}
 	return data
 }
@@ -146,4 +155,26 @@ func traceToString(traceData *retryabledns.TraceData, withSteps bool) string {
 		}
 	}
 	return buffer.String()
+}
+
+func recordsKeyValue(resourceRecords []dns.RR) output.InternalEvent {
+	var oe = make(output.InternalEvent)
+	for _, resourceRecord := range resourceRecords {
+		key := strings.ToLower(dns.TypeToString[resourceRecord.Header().Rrtype])
+		value := strings.TrimSuffix(strings.ReplaceAll(resourceRecord.String(), resourceRecord.Header().String(), ""), ".")
+
+		// if the key is already present, we need to convert the value to a slice
+		// if the key has slice, then append the value to the slice
+		if previous, ok := oe[key]; ok {
+			switch v := previous.(type) {
+			case string:
+				oe[key] = []string{v, value}
+			case []string:
+				oe[key] = append(v, value)
+			}
+			continue
+		}
+		oe[key] = value
+	}
+	return oe
 }

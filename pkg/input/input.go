@@ -2,13 +2,15 @@ package input
 
 import (
 	"net"
-	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 
 	templateTypes "Ni/pkg/templates/types"
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	fileutil "github.com/projectdiscovery/utils/file"
+	"github.com/projectdiscovery/utils/ports"
+	stringsutil "github.com/projectdiscovery/utils/strings"
+	urlutil "github.com/projectdiscovery/utils/url"
 )
 
 // Helper is a structure for helping with input transformation
@@ -16,7 +18,7 @@ type Helper struct {
 	InputsHTTP *hybrid.HybridMap
 }
 
-// NewHelper returns a new inpt helper instance
+// NewHelper returns a new input helper instance
 func NewHelper() *Helper {
 	helper := &Helper{}
 	return helper
@@ -43,8 +45,6 @@ func (h *Helper) Transform(input string, protocol templateTypes.ProtocolType) st
 		return h.convertInputToType(input, typeURL, "")
 	case templateTypes.NetworkProtocol:
 		return h.convertInputToType(input, typeHostWithOptionalPort, "")
-	case templateTypes.SSLProtocol:
-		return h.convertInputToType(input, typeHostWithPort, "443")
 	case templateTypes.WebsocketProtocol:
 		return h.convertInputToType(input, typeWebsocket, "")
 	}
@@ -65,17 +65,22 @@ const (
 // convertInputToType converts an input based on an inputType.
 // Various formats are supported for inputs and their transformation
 func (h *Helper) convertInputToType(input string, inputType inputType, defaultPort string) string {
-	notURL := !strings.Contains(input, "://")
-	parsed, _ := url.Parse(input)
+	isURL := strings.Contains(input, "://")
+	uri, _ := urlutil.Parse(input)
+
 	var host, port string
-	if !notURL && parsed != nil {
-		host, port, _ = net.SplitHostPort(parsed.Host)
+	if isURL && uri != nil {
+		host, port, _ = net.SplitHostPort(uri.Host)
 	} else {
 		host, port, _ = net.SplitHostPort(input)
 	}
-	hasPort := port != ""
 
-	if inputType == typeFilepath {
+	hasHost := host != ""
+	hasPort := ports.IsValid(port)
+	hasDefaultPort := ports.IsValid(defaultPort)
+
+	switch inputType {
+	case typeFilepath:
 		// if it has ports most likely it's not a file
 		if hasPort {
 			return ""
@@ -83,23 +88,22 @@ func (h *Helper) convertInputToType(input string, inputType inputType, defaultPo
 		if filepath.IsAbs(input) {
 			return input
 		}
-		if absPath, _ := filepath.Abs(input); absPath != "" && fileOrFolderExists(absPath) {
+		if absPath, _ := filepath.Abs(input); absPath != "" && fileutil.FileOrFolderExists(absPath) {
 			return input
 		}
-		if _, err := filepath.Match(input, ""); err != filepath.ErrBadPattern && notURL {
+		if _, err := filepath.Match(input, ""); err != filepath.ErrBadPattern && !isURL {
 			return input
 		}
-	} else if inputType == typeHostOnly {
-		if host != "" {
+	case typeHostOnly:
+		if hasHost {
 			return host
 		}
-		if !notURL {
-			return parsed.Hostname()
-		} else {
-			return input
+		if isURL && uri != nil {
+			return uri.Hostname()
 		}
-	} else if inputType == typeURL {
-		if parsed != nil && (parsed.Scheme == "http" || parsed.Scheme == "https") {
+		return input
+	case typeURL:
+		if uri != nil && stringsutil.EqualFoldAny(uri.Scheme, "http", "https") {
 			return input
 		}
 		if h.InputsHTTP != nil {
@@ -107,36 +111,23 @@ func (h *Helper) convertInputToType(input string, inputType inputType, defaultPo
 				return string(probed)
 			}
 		}
-	} else if inputType == typeHostWithPort {
-		if host != "" && port != "" {
+	case typeHostWithPort, typeHostWithOptionalPort:
+		if hasHost && hasPort {
 			return net.JoinHostPort(host, port)
 		}
-		if parsed != nil && port == "" && parsed.Scheme == "https" {
-			return net.JoinHostPort(parsed.Host, "443")
+		if uri != nil && !hasPort && uri.Scheme == "https" {
+			return net.JoinHostPort(uri.Host, "443")
 		}
-		if defaultPort != "" {
+		if hasDefaultPort {
 			return net.JoinHostPort(input, defaultPort)
 		}
-	} else if inputType == typeHostWithOptionalPort {
-		if host != "" && port != "" {
-			return net.JoinHostPort(host, port)
+		if inputType == typeHostWithOptionalPort {
+			return input
 		}
-		if parsed != nil && port == "" && parsed.Scheme == "https" {
-			return net.JoinHostPort(parsed.Host, "443")
-		}
-		if defaultPort != "" {
-			return net.JoinHostPort(input, defaultPort)
-		}
-		return input
-	} else if inputType == typeWebsocket {
-		if parsed != nil && (parsed.Scheme == "ws" || parsed.Scheme == "wss") {
+	case typeWebsocket:
+		if uri != nil && stringsutil.EqualFoldAny(uri.Scheme, "ws", "wss") {
 			return input
 		}
 	}
 	return ""
-}
-
-func fileOrFolderExists(filename string) bool {
-	_, err := os.Stat(filename)
-	return !os.IsNotExist(err)
 }

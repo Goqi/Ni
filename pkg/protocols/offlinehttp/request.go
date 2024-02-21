@@ -2,10 +2,8 @@ package offlinehttp
 
 import (
 	"io"
-	"net/http"
 	"net/http/httputil"
 	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/remeh/sizedwaitgroup"
@@ -13,8 +11,10 @@ import (
 	"Ni/pkg/output"
 	"Ni/pkg/protocols"
 	"Ni/pkg/protocols/common/contextargs"
+	"Ni/pkg/protocols/common/generators"
 	"Ni/pkg/protocols/common/helpers/eventcreator"
 	"Ni/pkg/protocols/common/tostring"
+	"Ni/pkg/protocols/utils"
 	templateTypes "Ni/pkg/templates/types"
 	"github.com/projectdiscovery/gologger"
 )
@@ -86,7 +86,12 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata 
 				return
 			}
 
-			outputEvent := request.responseToDSLMap(resp, data, data, data, tostring.UnsafeToString(dumpedResponse), tostring.UnsafeToString(body), headersToString(resp.Header), 0, nil)
+			outputEvent := request.responseToDSLMap(resp, data, data, data, tostring.UnsafeToString(dumpedResponse), tostring.UnsafeToString(body), utils.HeadersToString(resp.Header), 0, nil)
+			// add response fields to template context and merge templatectx variables to output event
+			request.options.AddTemplateVars(input.MetaInput, request.Type(), request.GetID(), outputEvent)
+			if request.options.HasTemplateCtx(input.MetaInput) {
+				outputEvent = generators.MergeMaps(outputEvent, request.options.GetTemplateCtx(input.MetaInput).GetAll())
+			}
 			outputEvent["ip"] = ""
 			for k, v := range previous {
 				outputEvent[k] = v
@@ -104,26 +109,4 @@ func (request *Request) ExecuteWithResults(input *contextargs.Context, metadata 
 	}
 	request.options.Progress.IncrementRequests()
 	return nil
-}
-
-// headersToString converts http headers to string
-func headersToString(headers http.Header) string {
-	builder := &strings.Builder{}
-
-	for header, values := range headers {
-		builder.WriteString(header)
-		builder.WriteString(": ")
-
-		for i, value := range values {
-			builder.WriteString(value)
-
-			if i != len(values)-1 {
-				builder.WriteRune('\n')
-				builder.WriteString(header)
-				builder.WriteString(": ")
-			}
-		}
-		builder.WriteRune('\n')
-	}
-	return builder.String()
 }

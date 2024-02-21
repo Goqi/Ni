@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"Ni/pkg/model/types/stringslice"
 	"github.com/projectdiscovery/goflags"
+	"Ni/pkg/model/types/stringslice"
 )
 
 // Severities used by the goflags library for parsing an array of Severity types, passed as CLI arguments from the user
@@ -66,6 +66,14 @@ func (severities Severities) String() string {
 		stringSeverities = append(stringSeverities, severity.String())
 	}
 	return strings.Join(stringSeverities, ", ")
+}
+
+func (severities Severities) MarshalJSON() ([]byte, error) {
+	var stringSeverities = make([]string, 0, len(severities))
+	for _, severity := range severities {
+		stringSeverities = append(stringSeverities, severity.String())
+	}
+	return json.Marshal(stringSeverities)
 }
 
 func setSeverity(severities *Severities, value string) error {

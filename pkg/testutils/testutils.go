@@ -2,12 +2,16 @@ package testutils
 
 import (
 	"context"
+	"encoding/base64"
+	"os"
 	"time"
 
 	"github.com/projectdiscovery/ratelimit"
+	"go.uber.org/multierr"
 
 	"github.com/logrusorgru/aurora"
 
+	"Ni/pkg/catalog/config"
 	"Ni/pkg/catalog/disk"
 	"Ni/pkg/model"
 	"Ni/pkg/model/types/severity"
@@ -15,7 +19,9 @@ import (
 	"Ni/pkg/progress"
 	"Ni/pkg/protocols"
 	"Ni/pkg/protocols/common/protocolinit"
+	protocolUtils "Ni/pkg/protocols/utils"
 	"Ni/pkg/types"
+	"Ni/pkg/utils"
 	"github.com/projectdiscovery/gologger/levels"
 )
 
@@ -31,14 +37,12 @@ var DefaultOptions = &types.Options{
 	DebugRequests:              false,
 	DebugResponse:              false,
 	Silent:                     false,
-	Version:                    false,
 	Verbose:                    false,
 	NoColor:                    true,
 	UpdateTemplates:            false,
-	JSON:                       false,
-	JSONRequests:               false,
+	JSONL:                      false,
+	OmitRawRequests:            false,
 	EnableProgressBar:          false,
-	TemplatesVersion:           false,
 	TemplateList:               false,
 	Stdin:                      false,
 	StopAtFirstMatch:           false,
@@ -56,7 +60,6 @@ var DefaultOptions = &types.Options{
 	TargetsFilePath:            "",
 	Output:                     "",
 	Proxy:                      []string{},
-	TemplatesDirectory:         "",
 	TraceLogFile:               "",
 	Templates:                  []string{},
 	ExcludedTemplates:          []string{},
@@ -66,8 +69,8 @@ var DefaultOptions = &types.Options{
 	InteractionsEviction:       60,
 	InteractionsCoolDownPeriod: 5,
 	InteractionsPollDuration:   5,
-	GithubTemplateRepo:         []string{},
-	GithubToken:                "",
+	GitHubTemplateRepo:         []string{},
+	GitHubToken:                "",
 }
 
 // TemplateInfo contains info for a mock executed template.
@@ -78,21 +81,22 @@ type TemplateInfo struct {
 }
 
 // NewMockExecuterOptions creates a new mock executeroptions struct
-func NewMockExecuterOptions(options *types.Options, info *TemplateInfo) *protocols.ExecuterOptions {
+func NewMockExecuterOptions(options *types.Options, info *TemplateInfo) *protocols.ExecutorOptions {
 	progressImpl, _ := progress.NewStatsTicker(0, false, false, false, 0)
-	executerOpts := &protocols.ExecuterOptions{
+	executerOpts := &protocols.ExecutorOptions{
 		TemplateID:   info.ID,
 		TemplateInfo: info.Info,
 		TemplatePath: info.Path,
-		Output:       NewMockOutputWriter(),
+		Output:       NewMockOutputWriter(options.OmitTemplate),
 		Options:      options,
 		Progress:     progressImpl,
 		ProjectFile:  nil,
 		IssuesClient: nil,
 		Browser:      nil,
-		Catalog:      disk.NewCatalog(options.TemplatesDirectory),
+		Catalog:      disk.NewCatalog(config.DefaultConfig.TemplatesDirectory),
 		RateLimiter:  ratelimit.New(context.Background(), uint(options.RateLimit), time.Second),
 	}
+	executerOpts.CreateTemplateCtxStore()
 	return executerOpts
 }
 
@@ -105,13 +109,15 @@ func (n *NoopWriter) Write(data []byte, level levels.Level) {}
 // MockOutputWriter is a mocked output writer.
 type MockOutputWriter struct {
 	aurora          aurora.Aurora
+	omitTemplate    bool
 	RequestCallback func(templateID, url, requestType string, err error)
+	FailureCallback func(result *output.InternalEvent)
 	WriteCallback   func(o *output.ResultEvent)
 }
 
 // NewMockOutputWriter creates a new mock output writer
-func NewMockOutputWriter() *MockOutputWriter {
-	return &MockOutputWriter{aurora: aurora.NewAurora(false)}
+func NewMockOutputWriter(omomitTemplate bool) *MockOutputWriter {
+	return &MockOutputWriter{aurora: aurora.NewAurora(false), omitTemplate: omomitTemplate}
 }
 
 // Close closes the output writer interface
@@ -138,12 +144,71 @@ func (m *MockOutputWriter) Request(templateID, url, requestType string, err erro
 }
 
 // WriteFailure writes the event to file and/or screen.
-func (m *MockOutputWriter) WriteFailure(result output.InternalEvent) error {
-	return nil
-}
-func (m *MockOutputWriter) WriteStoreDebugData(host, templateID, eventType string, data string) {
+func (m *MockOutputWriter) WriteFailure(wrappedEvent *output.InternalWrappedEvent) error {
+	// if failure event has more than one result, write them all
+	if len(wrappedEvent.Results) > 0 {
+		errs := []error{}
+		for _, result := range wrappedEvent.Results {
+			result.MatcherStatus = false // just in case
+			if err := m.Write(result); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if len(errs) > 0 {
+			return multierr.Combine(errs...)
+		}
+		return nil
+	}
 
+	// create event
+	event := wrappedEvent.InternalEvent
+	templatePath, templateURL := utils.TemplatePathURL(types.ToString(event["template-path"]), types.ToString(event["template-id"]))
+	var templateInfo model.Info
+	if ti, ok := event["template-info"].(model.Info); ok {
+		templateInfo = ti
+	}
+	fields := protocolUtils.GetJsonFieldsFromURL(types.ToString(event["host"]))
+	if types.ToString(event["ip"]) != "" {
+		fields.Ip = types.ToString(event["ip"])
+	}
+	if types.ToString(event["path"]) != "" {
+		fields.Path = types.ToString(event["path"])
+	}
+	data := &output.ResultEvent{
+		Template:      templatePath,
+		TemplateURL:   templateURL,
+		TemplateID:    types.ToString(event["template-id"]),
+		TemplatePath:  types.ToString(event["template-path"]),
+		Info:          templateInfo,
+		Type:          types.ToString(event["type"]),
+		Path:          fields.Path,
+		Host:          fields.Host,
+		Port:          fields.Port,
+		Scheme:        fields.Scheme,
+		URL:           fields.URL,
+		IP:            fields.Ip,
+		Request:       types.ToString(event["request"]),
+		Response:      types.ToString(event["response"]),
+		MatcherStatus: false,
+		Timestamp:     time.Now(),
+		//FIXME: this is workaround to encode the template when no results were found
+		TemplateEncoded: m.encodeTemplate(types.ToString(event["template-path"])),
+		Error:           types.ToString(event["error"]),
+	}
+	return m.Write(data)
 }
+
+var maxTemplateFileSizeForEncoding = 1024 * 1024
+
+func (w *MockOutputWriter) encodeTemplate(templatePath string) string {
+	data, err := os.ReadFile(templatePath)
+	if err == nil && !w.omitTemplate && len(data) <= maxTemplateFileSizeForEncoding && config.DefaultConfig.IsCustomTemplate(templatePath) {
+		return base64.StdEncoding.EncodeToString(data)
+	}
+	return ""
+}
+
+func (m *MockOutputWriter) WriteStoreDebugData(host, templateID, eventType string, data string) {}
 
 type MockProgressClient struct{}
 
@@ -158,6 +223,9 @@ func (m *MockProgressClient) AddToTotal(delta int64) {}
 
 // IncrementRequests increments the requests counter by 1.
 func (m *MockProgressClient) IncrementRequests() {}
+
+// SetRequests sets the counter by incrementing it with a delta
+func (m *MockProgressClient) SetRequests(count uint64) {}
 
 // IncrementMatched increments the matched counter by 1.
 func (m *MockProgressClient) IncrementMatched() {}

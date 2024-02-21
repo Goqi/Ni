@@ -6,6 +6,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 
 	"Ni/pkg/output"
+	"Ni/pkg/reporting/exporters/markdown/util"
 	"Ni/pkg/reporting/format"
 	"github.com/projectdiscovery/retryablehttp-go"
 )
@@ -32,8 +33,11 @@ type Options struct {
 	// SeverityAsLabel (optional) sends the severity as the label of the created
 	// issue.
 	SeverityAsLabel bool `yaml:"severity-as-label"`
+	// DuplicateIssueCheck is a bool to enable duplicate tracking issue check and update the newest
+	DuplicateIssueCheck bool `yaml:"duplicate-issue-check" default:"false"`
 
 	HttpClient *retryablehttp.Client `yaml:"-"`
+	OmitRaw    bool                  `yaml:"-"`
 }
 
 // New creates a new issue tracker integration client based on options.
@@ -59,7 +63,7 @@ func New(options *Options) (*Integration, error) {
 // CreateIssue creates an issue in the tracker
 func (i *Integration) CreateIssue(event *output.ResultEvent) error {
 	summary := format.Summary(event)
-	description := format.MarkdownDescription(event)
+	description := format.CreateReportDescription(event, util.MarkdownFormatter{}, i.options.OmitRaw)
 	labels := []string{}
 	severityLabel := fmt.Sprintf("Severity: %s", event.Info.SeverityHolder.Severity.String())
 	if i.options.SeverityAsLabel && severityLabel != "" {
@@ -70,6 +74,35 @@ func (i *Integration) CreateIssue(event *output.ResultEvent) error {
 	}
 	customLabels := gitlab.Labels(labels)
 	assigneeIDs := []int{i.userID}
+	if i.options.DuplicateIssueCheck {
+		searchIn := "title"
+		searchState := "all"
+		issues, _, err := i.client.Issues.ListProjectIssues(i.options.ProjectName, &gitlab.ListProjectIssuesOptions{
+			In:     &searchIn,
+			State:  &searchState,
+			Search: &summary,
+		})
+		if err != nil {
+			return err
+		}
+		if len(issues) > 0 {
+			issue := issues[0]
+			_, _, err := i.client.Notes.CreateIssueNote(i.options.ProjectName, issue.IID, &gitlab.CreateIssueNoteOptions{
+				Body: &description,
+			})
+			if err != nil {
+				return err
+			}
+			if issue.State == "closed" {
+				reopen := "reopen"
+				_, resp, err := i.client.Issues.UpdateIssue(i.options.ProjectName, issue.IID, &gitlab.UpdateIssueOptions{
+					StateEvent: &reopen,
+				})
+				fmt.Sprintln(resp, err)
+			}
+			return err
+		}
+	}
 	_, _, err := i.client.Issues.CreateIssue(i.options.ProjectName, &gitlab.CreateIssueOptions{
 		Title:       &summary,
 		Description: &description,
