@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/projectdiscovery/goflags"
 	"Ni/pkg/catalog"
 	"Ni/pkg/catalog/config"
 	"Ni/pkg/model/types/severity"
 	"Ni/pkg/templates/types"
+	folderutil "Ni/pkg/utils/folder"
+	"github.com/projectdiscovery/goflags"
 	errorutil "github.com/projectdiscovery/utils/errors"
 	fileutil "github.com/projectdiscovery/utils/file"
-	folderutil "github.com/projectdiscovery/utils/folder"
 )
 
 var (

@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	folderutil "Ni/pkg/utils/folder"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
 	fileutil "github.com/projectdiscovery/utils/file"
-	folderutil "github.com/projectdiscovery/utils/folder"
 )
 
 // getInputPaths parses the specified input paths and returns a compiled

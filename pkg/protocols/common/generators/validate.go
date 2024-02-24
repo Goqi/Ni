@@ -8,8 +8,8 @@ import (
 
 	"Ni/pkg/catalog/config"
 	"Ni/pkg/types"
+	folderutil "Ni/pkg/utils/folder"
 	fileutil "github.com/projectdiscovery/utils/file"
-	folderutil "github.com/projectdiscovery/utils/folder"
 )
 
 // validate validates the payloads if any.

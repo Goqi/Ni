@@ -8,12 +8,12 @@ import (
 
 	"Ni/pkg/catalog/config"
 	"Ni/pkg/types"
+	folderutil "Ni/pkg/utils/folder"
 	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
 	fileutil "github.com/projectdiscovery/utils/file"
-	folderutil "github.com/projectdiscovery/utils/folder"
 	"golang.org/x/oauth2"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
